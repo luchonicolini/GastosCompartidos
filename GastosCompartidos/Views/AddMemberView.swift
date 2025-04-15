@@ -6,6 +6,7 @@
 //
 
 
+// Views/AddMemberView.swift
 import SwiftUI
 import SwiftData
 
@@ -33,55 +34,65 @@ struct AddMemberView: View {
 
     var body: some View {
         NavigationStack {
-            // Usar List directamente para mejor integración con Form/Section si es necesario
+            // <<--- LLAMADA A LA FUNCIÓN DE PRINTS --->>
+            // Usamos una función para evitar ensuciar el body directamente
+            // La asignación a _ evita warnings de "resultado no usado"
+            let _ = printDebuggingInfo()
+            // <<--- FIN DE LA LLAMADA --->>
+
             List {
                 // Sección para añadir nueva persona
                 Section("Añadir nueva persona") {
                     HStack {
                         TextField("Nombre", text: $newPersonName)
-                            // .textFieldStyle(.roundedBorder) // No necesario dentro de List/Form
                         Button {
                             addNewPerson()
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .resizable()
-                                .frame(width: 24, height: 24) // Ajustar tamaño icono
+                                .frame(width: 24, height: 24)
                         }
                         .disabled(newPersonName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        .buttonStyle(.borderless) // Evitar estilo por defecto en List
+                        .buttonStyle(.borderless)
                     }
                 }
 
                 // Lista de personas existentes disponibles
-                if availablePeople.isEmpty && allPeople.count > (group.members?.count ?? 0) {
-                    // Caso donde hay otras personas pero ya están todas en este grupo
-                     Section("Añadir persona existente") {
-                        Text("Todas las personas guardadas ya están en este grupo.")
+                // Usamos la variable calculada una vez para eficiencia y prints
+                let currentAvailablePeople = availablePeople // Calcula una vez
+                if !currentAvailablePeople.isEmpty {
+                    Section {
+                        Text("Puedes añadir personas de otros grupos o crear una nueva arriba.")
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                } else if availablePeople.isEmpty && allPeople.count <= (group.members?.count ?? 0) {
-                     // Caso donde no hay otras personas en la app
-                     Section("Añadir persona existente") {
-                        Text("No hay otras personas guardadas en la app.")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                else {
+
                     Section("Añadir persona existente") {
-                        ForEach(availablePeople) { person in
+                        // Asegúrate de usar la variable que calculaste
+                        ForEach(currentAvailablePeople) { person in
                             Button {
                                 addExistingPerson(person)
                             } label: {
                                 Text(person.name)
-                                    .foregroundStyle(.primary) // Asegurar color de texto
-                                    .frame(maxWidth: .infinity, alignment: .leading) // Ocupar espacio
+                                    .foregroundStyle(.primary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .buttonStyle(.plain) // Estilo limpio para botones en lista
+                            .buttonStyle(.plain)
+                        }
+                    }
+                } else {
+                    // Sección informativa si no hay nadie más para añadir
+                    Section {
+                        if allPeople.count > (group.members?.count ?? 0) {
+                            Text("Todas las personas guardadas ya están en este grupo. Puedes añadir una nueva arriba.")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("No hay otras personas guardadas en la app. Puedes añadir una nueva arriba.")
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
             }
-            // .listStyle(.insetGrouped) // Puedes elegir el estilo de lista
             .navigationTitle("Añadir Miembro")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -89,28 +100,43 @@ struct AddMemberView: View {
                     Button("Cerrar") { dismiss() }
                 }
             }
-            // Ocultar teclado al hacer scroll en la lista (opcional)
             .scrollDismissesKeyboard(.interactively)
         }
     }
 
-    // --- Funciones de Acción ---
+    // --- Función para Imprimir Información de Depuración ---
+    private func printDebuggingInfo() {
+        // Calcula availablePeople una vez para los prints
+        let currentAvailablePeople = availablePeople
+
+        print("--- AddMemberView Body ---")
+        print("Grupo actual: \(group.name)")
+        // Añadimos IDs para depurar mejor
+        print("Miembros en grupo actual (\(group.members?.count ?? 0)): \(group.members?.map { "\($0.name) (\($0.id))" } ?? ["Ninguno"])")
+        // Añadimos IDs para depurar mejor
+        print("Total Personas en BD (@Query: \(allPeople.count)): \(allPeople.map { "\($0.name) (\($0.id))" })")
+         // Añadimos IDs para depurar mejor
+        print("Personas disponibles calculadas (\(currentAvailablePeople.count)): \(currentAvailablePeople.map { "\($0.name) (\($0.id))" })")
+        print("--------------------------")
+    }
+
+
+    // --- Funciones de Acción (sin cambios) ---
     private func addExistingPerson(_ person: Person) {
         viewModel.addMember(person, to: group, context: modelContext)
-        // dismiss() // Podrías cerrar al añadir, o permitir añadir varios
     }
 
     private func addNewPerson() {
         let trimmedName = newPersonName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
         viewModel.addNewPersonAndAddToGroup(name: trimmedName, to: group, context: modelContext)
-        newPersonName = "" // Limpiar campo
-        // dismiss() // Podrías cerrar al añadir, o permitir añadir varios
+        newPersonName = ""
     }
 }
 
-// --- Preview ---
+// --- Preview (sin cambios) ---
 #Preview {
+    // ... (código del preview sin cambios) ...
     do {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: Group.self, Person.self, Expense.self, configurations: config)
@@ -124,13 +150,11 @@ struct AddMemberView: View {
         container.mainContext.insert(p3)
         container.mainContext.insert(group)
 
-        // Importante: Pasar el grupo a la vista
         return AddMemberView(group: group)
-            .modelContainer(container) // Pasar el contenedor a la preview
+            .modelContainer(container)
 
     } catch {
         fatalError("Failed to create model container for preview: \(error)")
     }
 }
-
 

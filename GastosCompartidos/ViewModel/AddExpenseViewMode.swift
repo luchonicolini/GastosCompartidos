@@ -48,9 +48,9 @@ class AddExpenseViewModel {
     }
 
     // Función para guardar el gasto
-    @MainActor // Asegurar que se ejecuta en el hilo principal si interactúa con UI/SwiftData
+    @MainActor
     func saveExpense(for group: Group, context: ModelContext) -> Bool {
-        errorMessage = nil // Limpiar errores previos
+        errorMessage = nil
         let trimmedAmountString = amountString.trimmingCharacters(in: .whitespaces)
 
         // --- Validación ---
@@ -58,17 +58,32 @@ class AddExpenseViewModel {
             errorMessage = "La descripción no puede estar vacía."
             return false
         }
-        // Validar que el monto sea un número Double válido y mayor que cero
-        guard let amount = Double(trimmedAmountString), amount > 0 else {
-            errorMessage = "Introduce un monto numérico válido y mayor que cero."
-            // Considerar usar NumberFormatter para validar formatos locales si es necesario
+
+        // --- Conversión y Validación de Monto con NumberFormatter (Corregida) ---
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal // Reconoce formato local
+
+        // 1. Intentar convertir el String a NSNumber?
+        guard let number = formatter.number(from: trimmedAmountString) else {
+            // Falló la conversión inicial (formato inválido)
+            errorMessage = "Formato de monto inválido (usa el separador decimal de tu región)."
             return false
         }
+
+        // 2. Obtener el valor Double y verificar si es > 0
+        let amount = number.doubleValue // number aquí ya NO es opcional
+        guard amount > 0 else {
+            // El número era válido, pero no > 0
+            errorMessage = "El monto debe ser mayor que cero."
+            return false
+        }
+        // --- Fin Conversión de Monto ---
+        // Si llegamos aquí, 'amount' es un Double válido y > 0
+
         guard let payerId = selectedPayerId, let payer = groupMembers.first(where: { $0.id == payerId }) else {
             errorMessage = "Selecciona quién pagó."
             return false
         }
-        // Obtener los objetos Person de los participantes seleccionados
         let participants = groupMembers.filter { selectedParticipantIds.contains($0.id) }
         guard !participants.isEmpty else {
             errorMessage = "Selecciona al menos un participante."
@@ -77,22 +92,15 @@ class AddExpenseViewModel {
 
         // --- Creación y guardado ---
         let newExpense = Expense(
-            description: description.trimmingCharacters(in: .whitespacesAndNewlines), // Guardar versión limpia
-            amount: amount,
+            description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+            amount: amount, // Usar el monto Double validado
             date: date,
             payer: payer,
-            participants: participants, // Guardar el array de Person filtrado
+            participants: participants,
             group: group
         )
         context.insert(newExpense)
         print("Gasto '\(newExpense.expenseDescription)' preparado para guardar.")
-
-        // El guardado real lo maneja SwiftData. Asumimos éxito aquí si no hay excepciones.
-
-        // Limpiar el formulario para la próxima entrada (opcional pero útil)
-        // Se podría llamar `clearForm()` aquí, pero si el usuario quiere añadir
-        // varios gastos similares, puede ser molesto. Mejor no limpiarlo automáticamente.
-        // La vista puede decidir si limpiar o no después de llamar a saveExpense.
 
         return true // Éxito
     }

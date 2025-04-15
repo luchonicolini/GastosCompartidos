@@ -115,7 +115,7 @@ class GroupDetailViewModel {
 
     // --- Lógica para Gastos ---
     func deleteExpense(_ expense: Expense, context: ModelContext) {
-         if let group = expense.group { // Guardar referencia al grupo antes de borrar
+        if expense.group != nil { // Guardar referencia al grupo antes de borrar
             context.delete(expense)
             print("Gasto '\(expense.expenseDescription)' eliminado.")
             // El .onChange(of: group.expenses) en la vista recalculará.
@@ -128,7 +128,7 @@ class GroupDetailViewModel {
 
     // --- Lógica de Liquidación (Simplificada, sin cambios) ---
     func suggestSettlements() -> [String] {
-        var balancesToSettle = memberBalances.filter { abs($0.balance) > 0.01 }
+        let balancesToSettle = memberBalances.filter { abs($0.balance) > 0.01 }
         var settlements: [String] = []
         var debtors = balancesToSettle.filter { $0.balance < 0 }.sorted { $0.balance < $1.balance }
         var creditors = balancesToSettle.filter { $0.balance > 0 }.sorted { $0.balance > $1.balance }

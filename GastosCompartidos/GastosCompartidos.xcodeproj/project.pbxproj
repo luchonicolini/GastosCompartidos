@@ -14,9 +14,6 @@
 		1997CB1A2DAD2426000B83CB /* GastosCompartidosTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB192DAD2426000B83CB /* GastosCompartidosTests.swift */; };
 		1997CB242DAD2426000B83CB /* GastosCompartidosUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB232DAD2426000B83CB /* GastosCompartidosUITests.swift */; };
 		1997CB262DAD2426000B83CB /* GastosCompartidosUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB252DAD2426000B83CB /* GastosCompartidosUITestsLaunchTests.swift */; };
-		1997CB392DAD26EE000B83CB /* DetalleGrupoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB382DAD26EE000B83CB /* DetalleGrupoView.swift */; };
-		1997CB3C2DAD2737000B83CB /* ListaGastosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB3B2DAD2737000B83CB /* ListaGastosView.swift */; };
-		1997CB3E2DAD274A000B83CB /* ResumenBalanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB3D2DAD274A000B83CB /* ResumenBalanceView.swift */; };
 		1997CB552DAD2F9D000B83CB /* GroupListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB542DAD2F9D000B83CB /* GroupListViewModel.swift */; };
 		1997CB592DAD3E3B000B83CB /* Person.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB582DAD3E3A000B83CB /* Person.swift */; };
 		1997CB5B2DAD3E6A000B83CB /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB5A2DAD3E6A000B83CB /* Group.swift */; };
@@ -58,9 +55,6 @@
 		1997CB1F2DAD2426000B83CB /* GastosCompartidosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GastosCompartidosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1997CB232DAD2426000B83CB /* GastosCompartidosUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosCompartidosUITests.swift; sourceTree = "<group>"; };
 		1997CB252DAD2426000B83CB /* GastosCompartidosUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosCompartidosUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		1997CB382DAD26EE000B83CB /* DetalleGrupoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetalleGrupoView.swift; sourceTree = "<group>"; };
-		1997CB3B2DAD2737000B83CB /* ListaGastosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListaGastosView.swift; sourceTree = "<group>"; };
-		1997CB3D2DAD274A000B83CB /* ResumenBalanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResumenBalanceView.swift; sourceTree = "<group>"; };
 		1997CB542DAD2F9D000B83CB /* GroupListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupListViewModel.swift; sourceTree = "<group>"; };
 		1997CB582DAD3E3A000B83CB /* Person.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Person.swift; sourceTree = "<group>"; };
 		1997CB5A2DAD3E6A000B83CB /* Group.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Group.swift; sourceTree = "<group>"; };
@@ -102,10 +96,10 @@
 		1997CAFC2DAD2421000B83CB = {
 			isa = PBXGroup;
 			children = (
+				1997CB322DAD2624000B83CB /* Models */,
 				1997CB502DAD2CF7000B83CB /* Utilities */,
 				1997CB452DAD27A6000B83CB /* ViewModel */,
 				1997CB352DAD26BC000B83CB /* Views */,
-				1997CB322DAD2624000B83CB /* Models */,
 				1997CB072DAD2421000B83CB /* GastosCompartidos */,
 				1997CB182DAD2426000B83CB /* GastosCompartidosTests */,
 				1997CB222DAD2426000B83CB /* GastosCompartidosUITests */,
@@ -172,24 +166,13 @@
 		1997CB352DAD26BC000B83CB /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				1997CB622DAD4069000B83CB /* GroupListView.swift */,
-				1997CB3A2DAD2710000B83CB /* DetalleGrupo */,
+				1997CB6C2DAE44C4000B83CB /* Main */,
 				1997CB642DAD418A000B83CB /* AddGroupView.swift */,
 				1997CB662DAD41AB000B83CB /* GroupDetailView.swift */,
 				1997CB682DAD41CE000B83CB /* AddExpenseView.swift */,
 				1997CB6A2DAD49B5000B83CB /* AddMemberView.swift */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		1997CB3A2DAD2710000B83CB /* DetalleGrupo */ = {
-			isa = PBXGroup;
-			children = (
-				1997CB382DAD26EE000B83CB /* DetalleGrupoView.swift */,
-				1997CB3B2DAD2737000B83CB /* ListaGastosView.swift */,
-				1997CB3D2DAD274A000B83CB /* ResumenBalanceView.swift */,
-			);
-			path = DetalleGrupo;
 			sourceTree = "<group>";
 		};
 		1997CB452DAD27A6000B83CB /* ViewModel */ = {
@@ -207,6 +190,14 @@
 			children = (
 			);
 			path = Utilities;
+			sourceTree = "<group>";
+		};
+		1997CB6C2DAE44C4000B83CB /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				1997CB622DAD4069000B83CB /* GroupListView.swift */,
+			);
+			path = Main;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -345,13 +336,10 @@
 				1997CB5B2DAD3E6A000B83CB /* Group.swift in Sources */,
 				1997CB612DAD3F72000B83CB /* AddExpenseViewMode.swift in Sources */,
 				1997CB592DAD3E3B000B83CB /* Person.swift in Sources */,
-				1997CB3E2DAD274A000B83CB /* ResumenBalanceView.swift in Sources */,
 				1997CB632DAD4069000B83CB /* GroupListView.swift in Sources */,
 				1997CB692DAD41CE000B83CB /* AddExpenseView.swift in Sources */,
 				1997CB5F2DAD3F43000B83CB /* GroupDetailViewModel.swift in Sources */,
-				1997CB3C2DAD2737000B83CB /* ListaGastosView.swift in Sources */,
 				1997CB0B2DAD2421000B83CB /* ContentView.swift in Sources */,
-				1997CB392DAD26EE000B83CB /* DetalleGrupoView.swift in Sources */,
 				1997CB5D2DAD3E9F000B83CB /* Expense.swift in Sources */,
 				1997CB652DAD418A000B83CB /* AddGroupView.swift in Sources */,
 				1997CB092DAD2421000B83CB /* GastosCompartidosApp.swift in Sources */,
