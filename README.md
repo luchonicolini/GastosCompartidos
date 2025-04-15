@@ -1,2 +1,2 @@
 # GastosCompartidos
-GastosCompartidos/VersionBETA
+
