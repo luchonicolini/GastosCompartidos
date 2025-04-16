@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		194B83482DAF155A004BC3AE /* Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 194B83472DAF155A004BC3AE /* Errors.swift */; };
 		1997CB092DAD2421000B83CB /* GastosCompartidosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB082DAD2421000B83CB /* GastosCompartidosApp.swift */; };
 		1997CB0B2DAD2421000B83CB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1997CB0A2DAD2421000B83CB /* ContentView.swift */; };
 		1997CB0D2DAD2425000B83CB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1997CB0C2DAD2425000B83CB /* Assets.xcassets */; };
@@ -45,6 +46,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		194B83472DAF155A004BC3AE /* Errors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Errors.swift; sourceTree = "<group>"; };
 		1997CB052DAD2421000B83CB /* GastosCompartidos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GastosCompartidos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1997CB082DAD2421000B83CB /* GastosCompartidosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosCompartidosApp.swift; sourceTree = "<group>"; };
 		1997CB0A2DAD2421000B83CB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -181,6 +183,7 @@
 				1997CB542DAD2F9D000B83CB /* GroupListViewModel.swift */,
 				1997CB5E2DAD3F43000B83CB /* GroupDetailViewModel.swift */,
 				1997CB602DAD3F72000B83CB /* AddExpenseViewMode.swift */,
+				194B83472DAF155A004BC3AE /* Errors.swift */,
 			);
 			path = ViewModel;
 			sourceTree = "<group>";
@@ -336,6 +339,7 @@
 				1997CB5B2DAD3E6A000B83CB /* Group.swift in Sources */,
 				1997CB612DAD3F72000B83CB /* AddExpenseViewMode.swift in Sources */,
 				1997CB592DAD3E3B000B83CB /* Person.swift in Sources */,
+				194B83482DAF155A004BC3AE /* Errors.swift in Sources */,
 				1997CB632DAD4069000B83CB /* GroupListView.swift in Sources */,
 				1997CB692DAD41CE000B83CB /* AddExpenseView.swift in Sources */,
 				1997CB5F2DAD3F43000B83CB /* GroupDetailViewModel.swift in Sources */,

@@ -13,7 +13,13 @@ struct AddExpenseView: View {
     @Environment(\.dismiss) var dismiss
 
     let group: Group
+    var expenseToEdit: Expense?
+
     @State private var viewModel = AddExpenseViewModel()
+    
+    private var navigationTitle: String {
+            expenseToEdit == nil ? "Nuevo Gasto" : "Editar Gasto"
+        }
 
     var body: some View {
         NavigationStack {
@@ -43,8 +49,7 @@ struct AddExpenseView: View {
                         members: viewModel.availableMembers(),
                         selectedMemberIds: $viewModel.selectedParticipantIds
                     )
-                    .listRowInsets(EdgeInsets()) // Ocupar todo el ancho
-                    // Añadir altura mínima si es necesario para que no sea muy pequeño
+                    .listRowInsets(EdgeInsets())
                     // .frame(minHeight: 150)
                 }
 
@@ -57,7 +62,7 @@ struct AddExpenseView: View {
                     }
                 }
             }
-            .navigationTitle("Nuevo Gasto")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -68,24 +73,18 @@ struct AddExpenseView: View {
                         // Intentar guardar a través del ViewModel
                         let success = viewModel.saveExpense(for: group, context: modelContext)
                         if success {
-                            // Opcional: dar feedback háptico
-                            // UINotificationFeedbackGenerator().notificationOccurred(.success)
-
-                            // Opcional: Limpiar formulario si se desea (llamando a viewModel.clearForm())
-                            // viewModel.clearForm() // Descomentar si quieres que se limpie
-
-                            dismiss() // Cerrar la hoja si se guarda con éxito
+                            
+                            dismiss()
                         } else {
                             // Opcional: dar feedback háptico de error
                             // UINotificationFeedbackGenerator().notificationOccurred(.error)
                         }
                     }
-                    // Deshabilitar si falta información esencial (simplificado)
                     .disabled(viewModel.description.isEmpty || viewModel.amountString.isEmpty || viewModel.selectedPayerId == nil || viewModel.selectedParticipantIds.isEmpty)
                 }
             }
             .task { // Usar .task es preferible a .onAppear para tareas asíncronas o setup
-                viewModel.setup(members: group.members ?? [])
+                viewModel.setup(expense: expenseToEdit, members: group.members ?? [])
             }
             // Ocultar teclado al hacer scroll (opcional)
             // .scrollDismissesKeyboard(.interactively)
@@ -141,8 +140,8 @@ struct SelectMembersView: View {
 }
 
 
-// --- Preview (sin cambios, pero asegúrate que funcione) ---
-#Preview {
+// --- Preview (Modificado para probar ambos modos) ---
+#Preview("Añadir Gasto") { // Preview para añadir
     do {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: Group.self, Person.self, Expense.self, configurations: config)
@@ -154,11 +153,33 @@ struct SelectMembersView: View {
         container.mainContext.insert(p2)
         container.mainContext.insert(g)
 
-        // Envolver en algo que pueda presentar la hoja si es necesario
-        // o simplemente mostrar la vista directamente para preview del layout
+        // No pasamos expenseToEdit (queda nil)
         return AddExpenseView(group: g)
                .modelContainer(container)
+    } catch {
+        fatalError("Failed to create model container for preview: \(error)")
+    }
+}
 
+#Preview("Editar Gasto") { // Preview para editar
+    do {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Group.self, Person.self, Expense.self, configurations: config)
+        let p1 = Person(name: "Carlos")
+        let p2 = Person(name: "Diana")
+        let g = Group(name: "Preview Gasto Grupo")
+        g.members = [p1, p2]
+        // Crear un gasto existente para editar
+        let existingExpense = Expense(description: "Gasto Viejo", amount: 12.34, date: Date(), payer: p1, participants: [p1, p2], group: g)
+
+        container.mainContext.insert(p1)
+        container.mainContext.insert(p2)
+        container.mainContext.insert(g)
+        container.mainContext.insert(existingExpense) // Insertar el gasto
+
+        // Pasar el expenseToEdit
+        return AddExpenseView(group: g, expenseToEdit: existingExpense)
+               .modelContainer(container)
     } catch {
         fatalError("Failed to create model container for preview: \(error)")
     }

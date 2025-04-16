@@ -8,33 +8,49 @@
 import SwiftUI
 import SwiftData
 
+
 struct GroupDetailView: View {
+    // MARK: - Environment & State Variables
     @Environment(\.modelContext) private var modelContext
-    @Bindable var group: Group // Usar @Bindable si modificas el grupo aquí
-    @State private var viewModel = GroupDetailViewModel()
+    @Bindable var group: Group // Enlace bidireccional al grupo
+    @State private var viewModel = GroupDetailViewModel() // ViewModel para lógica
+
+    // Estados para presentar Hojas Modales (Sheets)
     @State private var showingAddExpenseSheet = false
+    @State private var showingAddMemberSheet = false
+    @State private var expenseToEdit: Expense? = nil // Para editar gasto existente
+
+    // Estados para Alertas
     @State private var showingSettlements = false
     @State private var settlementsText: [String] = []
-    @State private var showingAddMemberSheet = false // << NUEVO estado
+    @State private var showingRenameGroupAlert = false
+    @State private var showingRenamePersonAlert = false
 
-    // Formateador para moneda
+    // Estados para edición de nombres
+    @State private var newGroupName: String = "" // Temporal para renombrar grupo
+    @State private var personToRename: Person? = nil // Temporal para saber qué persona renombrar
+    @State private var newPersonName: String = "" // Temporal para renombrar persona
+
+    // MARK: - Formateador
     private var currencyFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        // Configurar localidad si es necesario
-        // formatter.locale = Locale(identifier: "es_ES")
-        // formatter.currencyCode = "EUR"
+        // formatter.locale = Locale.current // Opcional: especificar locale
+        // formatter.currencyCode = "USD" // Opcional: especificar código moneda
         return formatter
     }()
 
-    // Inicializador explícito (opcional si Xcode no da problemas de acceso)
+    // MARK: - Inicializador
     internal init(group: Group) {
          self.group = group
+         // Nota: @State / @StateObject se inicializan antes que esto.
+         // Cargar el nombre actual para la alerta se hace al tocar el botón.
     }
 
+    // MARK: - Body
     var body: some View {
         List {
-            // Sección Balances
+            // MARK: Section: Balances
             Section("Balances") {
                 if viewModel.memberBalances.isEmpty {
                     Text("No hay miembros o gastos para calcular balances.")
@@ -49,6 +65,7 @@ struct GroupDetailView: View {
                                 .fontWeight(.medium)
                         }
                     }
+                    // Botón para sugerir liquidaciones
                     if viewModel.memberBalances.contains(where: { abs($0.balance) > 0.01 }) {
                         Button {
                             settlementsText = viewModel.suggestSettlements()
@@ -58,82 +75,178 @@ struct GroupDetailView: View {
                         }
                     }
                 }
-            }
+            } // Fin Section Balances
 
-            // Sección Miembros (Modificada)
-            Section { // Quitamos el header explícito para que el botón y onDelete funcionen mejor
-                ForEach(group.members ?? []) { member in
+            // MARK: Section: Miembros
+            Section {
+                // Lista de miembros ordenados, con acción de tap para renombrar
+                ForEach(group.members?.sorted(by: { $0.name < $1.name }) ?? []) { member in
                     Text(member.name)
+                        .padding(.vertical, 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle()) // Área tappable completa
+                        .onTapGesture {
+                            // Acción al tocar un miembro: preparar para renombrar
+                            personToRename = member
+                            newPersonName = member.name // Cargar nombre actual
+                            showingRenamePersonAlert = true // Activar alerta
+                        }
                 }
-                .onDelete(perform: removeMember) // << Habilitar borrado por deslizamiento
+                .onDelete(perform: removeMember) // Acción de borrar miembro
 
-                // Botón para añadir miembros
+                // Botón para añadir miembro
                 Button {
-                    showingAddMemberSheet = true // << Mostrar hoja para añadir miembro
+                    showingAddMemberSheet = true
                 } label: {
                     Label("Añadir Miembro", systemImage: "plus.circle.fill")
                 }
 
-            } header: { // Usar header para el título de sección
+            } header: {
+                // Título de la sección de miembros
                 Text("Miembros (\(group.members?.count ?? 0))")
-            }
+            } // Fin Section Miembros
 
-            // Sección Gastos
+            // MARK: Section: Gastos
             Section("Gastos (\(group.expenses?.count ?? 0))") {
                  if group.expenses?.isEmpty ?? true {
                     Text("No hay gastos registrados.")
                         .foregroundStyle(.secondary)
                 } else {
+                    // Lista de gastos ordenados por fecha, con acción de tap para editar
                     ForEach(group.expenses?.sorted(by: { $0.date > $1.date }) ?? []) { expense in
-                        ExpenseRowView(expense: expense, currencyFormatter: currencyFormatter)
+                        // Contenido de la fila del gasto
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(expense.expenseDescription).font(.headline)
+                                Spacer()
+                                Text(expense.amount as NSNumber, formatter: currencyFormatter).font(.headline)
+                            }
+                            Text("Pagó: \(expense.payer?.name ?? "N/A")")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Text("Participantes (\(expense.participants?.count ?? 0)): \(expense.participants?.map(\.name).joined(separator: ", ") ?? "N/A")")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                            Text(expense.date, style: .date)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 4)
+                        .contentShape(Rectangle()) // Área tappable completa
+                        .onTapGesture {
+                            // Acción al tocar un gasto: preparar para editar
+                            expenseToEdit = expense // Activa la hoja de edición
+                        }
                     }
-                    .onDelete(perform: deleteExpense)
+                    .onDelete(perform: deleteExpense) // Acción de borrar gasto
                 }
-            }
-        }
-        .navigationTitle(group.name)
+            } // Fin Section Gastos
+        } // --- Fin del List ---
+
+        // MARK: Modificadores de Vista
+        .navigationTitle(group.name) // Título que se actualiza si cambia el nombre del grupo
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
-                // Botón Editar para activar modo de borrado en listas
-                EditButton() // << Añadido para modo edición (borrar miembros/gastos)
+                // Botón para activar/desactivar modo edición de listas (borrar)
+                EditButton()
 
-                // Botón para añadir un nuevo gasto
+                // Botón para Renombrar Grupo
+                Button {
+                    newGroupName = group.name // Cargar nombre actual
+                    showingRenameGroupAlert = true // Mostrar alerta
+                } label: {
+                    Label("Renombrar Grupo", systemImage: "pencil")
+                }
+
+                // Botón para Añadir Gasto
                 Button { showingAddExpenseSheet = true } label: { Label("Añadir Gasto", systemImage: "plus") }
             }
         }
-        // Hoja para añadir gastos
+        // --- Hojas Modales (.sheet) ---
         .sheet(isPresented: $showingAddExpenseSheet) {
-            AddExpenseView(group: group)
+             // Presenta vista para añadir gasto (sin pasar expenseToEdit)
+            AddExpenseView(group: group, expenseToEdit: nil)
         }
-        // << NUEVA Hoja Modal para Añadir Miembros >>
+        .sheet(item: $expenseToEdit) { expense in
+             // Presenta vista para editar gasto (pasando el expense)
+            AddExpenseView(group: group, expenseToEdit: expense)
+        }
         .sheet(isPresented: $showingAddMemberSheet) {
+             // Presenta vista para añadir miembro
              AddMemberView(group: group)
         }
-        // Alerta para mostrar liquidaciones
+        // --- Alertas (.alert) ---
         .alert("Liquidaciones Sugeridas", isPresented: $showingSettlements) {
-            Button("OK") { }
+             Button("OK") { } // Botón simple para cerrar
         } message: {
-            Text(settlementsText.joined(separator: "\n"))
+            Text(settlementsText.joined(separator: "\n")) // Muestra las sugerencias
         }
-        // Tareas y Observadores
+        .alert("Renombrar Grupo", isPresented: $showingRenameGroupAlert) {
+            // Alerta para renombrar el grupo
+            TextField("Nuevo nombre del grupo", text: $newGroupName)
+                .autocorrectionDisabled()
+
+            Button("Guardar") {
+                let trimmedName = newGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedName.isEmpty {
+                    print("Renombrando grupo '\(group.name)' a '\(trimmedName)'")
+                    group.name = trimmedName // Actualiza el nombre directamente
+                }
+            }
+            Button("Cancelar", role: .cancel) { } // Botón para cancelar
+
+        } message: {
+             Text("Introduce el nuevo nombre para el grupo '\(group.name)'.") // Mensaje informativo
+        }
+        .alert("Renombrar Persona", isPresented: $showingRenamePersonAlert, presenting: personToRename) { person in
+            // Alerta para renombrar persona (usando 'presenting' para pasar la persona)
+            TextField("Nuevo nombre", text: $newPersonName)
+                .autocorrectionDisabled()
+
+            Button("Guardar") {
+                let trimmedName = newPersonName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedName.isEmpty && trimmedName != person.name {
+                    print("Renombrando persona '\(person.name)' a '\(trimmedName)'")
+                    person.name = trimmedName // Actualiza el nombre de la persona globalmente
+                }
+                resetRenamePersonStates() // Limpiar estados después de acción
+            }
+            Button("Cancelar", role: .cancel) {
+                resetRenamePersonStates() // Limpiar estados al cancelar
+            }
+        } message: { person in
+            // Mensaje informativo
+            Text("Introduce el nuevo nombre para '\(person.name)'. Este cambio se reflejará en todos los grupos.")
+        }
+
+        // --- Tareas y Observadores de Cambios ---
         .task {
+            // Calcular balances al cargar la vista
             viewModel.calculateBalances(for: group)
         }
-        .onChange(of: group.members) { _, _ in viewModel.calculateBalances(for: group) }
-        .onChange(of: group.expenses) { _, _ in viewModel.calculateBalances(for: group) }
+        .onChange(of: group.members) { _, _ in
+             // Recalcular balances si cambian los miembros
+            viewModel.calculateBalances(for: group)
+        }
+        .onChange(of: group.expenses) { _, _ in
+             // Recalcular balances si cambian los gastos
+            viewModel.calculateBalances(for: group)
+        }
+
+    } // --- Fin del body ---
+
+    // MARK: - Funciones Auxiliares
+    private func resetRenamePersonStates() {
+        // Limpia las variables de estado usadas para renombrar persona
+        personToRename = nil
+        newPersonName = ""
+        showingRenamePersonAlert = false
     }
 
-    // Función para eliminar miembros (Nueva / Modificada)
     private func removeMember(offsets: IndexSet) {
-        // Asegurarse de que group.members no sea nil y obtener la lista actual
-        // Es importante obtener la lista ordenada como se muestra en la UI si el orden importa
-        guard let currentMembers = group.members else { return }
-        // Crear un array temporal basado en el orden actual si es necesario,
-        // o asumir que el orden del ForEach coincide con el array subyacente.
-        // Si no hay ordenación explícita en ForEach, podemos usar el array directamente.
-
+        // Lógica para eliminar miembros de la relación del grupo
+        guard let currentMembers = group.members?.sorted(by: { $0.name < $1.name }) else { return } // Asegurar el mismo orden que ForEach
         offsets.forEach { index in
-             // Validar índice por si acaso
             if index < currentMembers.count {
                 let memberToRemove = currentMembers[index]
                 viewModel.removeMember(memberToRemove, from: group, context: modelContext)
@@ -141,64 +254,40 @@ struct GroupDetailView: View {
         }
     }
 
-    // Función para eliminar gastos (sin cambios)
     private func deleteExpense(offsets: IndexSet) {
+        // Lógica para eliminar gastos del contexto
         guard let sortedExpenses = group.expenses?.sorted(by: { $0.date > $1.date }) else { return }
         offsets.forEach { index in
-             if index < sortedExpenses.count { // Añadir validación de índice
+            if index < sortedExpenses.count {
                 let expenseToDelete = sortedExpenses[index]
                 viewModel.deleteExpense(expenseToDelete, context: modelContext)
             }
         }
     }
-}
+} // --- Fin de la struct GroupDetailView ---
 
-// --- Vista Auxiliar ExpenseRowView (sin cambios) ---
-struct ExpenseRowView: View {
-    let expense: Expense
-    let currencyFormatter: NumberFormatter
-    var body: some View {
-         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(expense.expenseDescription).font(.headline)
-                Spacer()
-                Text(expense.amount as NSNumber, formatter: currencyFormatter).font(.headline)
-            }
-            Text("Pagó: \(expense.payer?.name ?? "N/A")")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text("Participantes (\(expense.participants?.count ?? 0)): \(expense.participants?.map(\.name).joined(separator: ", ") ?? "N/A")")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-            Text(expense.date, style: .date)
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-// --- Preview (Asegúrate de que siga funcionando) ---
+// MARK: - Preview
 #Preview {
     do {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: Group.self, Person.self, Expense.self, configurations: config)
+        // --- Crear datos de ejemplo para el preview ---
         let person1 = Person(name: "Ana")
         let person2 = Person(name: "Juan")
         let group = Group(name: "Grupo Detalle Preview")
         group.members = [person1, person2]
         let expense1 = Expense(description: "Cena", amount: 50.0, date: Date(), payer: person1, participants: [person1, person2], group: group)
-        let expense2 = Expense(description: "Taxi", amount: 20.0, date: Date().addingTimeInterval(-86400), payer: person2, participants: [person2], group: group)
+        // Insertar datos en el contexto del preview
         container.mainContext.insert(person1)
         container.mainContext.insert(person2)
         container.mainContext.insert(group)
         container.mainContext.insert(expense1)
-        container.mainContext.insert(expense2)
 
+        // Devolver la vista dentro de un NavigationStack para que se vea el título/toolbar
         return NavigationStack {
             GroupDetailView(group: group)
         }
-        .modelContainer(container)
+        .modelContainer(container) // Aplicar el contenedor al preview
 
     } catch {
         fatalError("Failed to create model container for preview: \(error)")

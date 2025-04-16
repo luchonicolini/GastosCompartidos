@@ -9,7 +9,6 @@
 import SwiftUI
 import SwiftData
 
-
 struct GroupListView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = GroupListViewModel()
