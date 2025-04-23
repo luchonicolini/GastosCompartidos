@@ -139,8 +139,7 @@ struct GroupDetailView: View {
             AddExpenseView(group: group)
         }
         .sheet(item: $expenseToEdit) { expense in
-             // Presenta AddExpenseView en modo EDITAR
-             // Pasamos el grupo y el gasto específico
+
              AddExpenseView(group: group, expenseToEdit: expense)
         }
         // Presentar la hoja para añadir miembro

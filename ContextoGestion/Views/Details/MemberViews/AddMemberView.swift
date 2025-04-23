@@ -121,7 +121,7 @@ struct AddMemberView: View {
             try viewModel.addMember(person, to: group, context: modelContext)
             print("Miembro existente '\(person.name)' añadido.")
             searchText = ""
-            successMessage = "'\\(person.name)' se añadió al grupo con éxito."
+            successMessage = "\(person.name) se añadió al grupo con éxito."
             showingSuccessAlert = true
             
         } catch let error as LocalizedError {
