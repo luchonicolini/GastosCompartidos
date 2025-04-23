@@ -46,7 +46,7 @@ struct GroupDetailView: View {
             // Sección 1: Balances y Liquidación
             Section("Resumen") {
                 // Incluimos la BalanceView directamente aquí
-                BalanceView(group: group) // BalanceView usa su propio viewModel interno
+                BalanceView(viewModel: viewModel) // BalanceView usa su propio viewModel interno
 
                 // Enlace para ver las sugerencias de liquidación
                 NavigationLink {
@@ -116,6 +116,7 @@ struct GroupDetailView: View {
                 } label: {
                     Label("Añadir Gasto", systemImage: "plus.circle.fill")
                 }
+                .disabled(group.members?.isEmpty ?? true)
             }
              // Botón para añadir Miembro
              ToolbarItem(placement: .navigationBarTrailing) {
@@ -145,9 +146,9 @@ struct GroupDetailView: View {
         // Presentar la hoja para añadir miembro
         .sheet(isPresented: $showingAddMemberSheet) {
              // Presenta tu AddMemberView
-             AddMemberView(group: group)
+            
            // AddMemberView(group: group, viewModel: viewModel)
-             // Nota: AddMemberView usa su propio viewModel interno según tu código
+            AddMemberView(group: group, viewModel: viewModel)
         }
         // Presentar la hoja para editar miembro
         .sheet(item: $memberToEdit) { member in
