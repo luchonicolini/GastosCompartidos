@@ -39,10 +39,14 @@ final class Expense {
             // Usar un JSONDecoder para convertir Data a Diccionario
             return try? JSONDecoder().decode([UUID: Double].self, from: data)
         }
-        set {
+        set throws {
             // Usar un JSONEncoder para convertir Diccionario a Data
             // Si newValue es nil, codifica nil, lo cual resulta en nil para splitDetailsData
-            splitDetailsData = try? JSONEncoder().encode(newValue)
+            do {
+                splitDetailsData = try JSONEncoder().encode(newValue)
+            } catch {
+                throw ExpenseError.encodingSplitDetailsError(error)
+            }
         }
     }
 

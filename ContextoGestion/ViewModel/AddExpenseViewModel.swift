@@ -39,7 +39,13 @@ class AddExpenseViewModel {
 
         if let expense = expense {
             description = expense.expenseDescription
-            amountString = String(format: "%.2f", expense.amount).replacingOccurrences(of: ",", with: ".")
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .decimal
+            formatter.minimumFractionDigits = 2
+            formatter.maximumFractionDigits = 2
+            formatter.usesGroupingSeparator = false // Important for plain number strings
+            formatter.decimalSeparator = "." // To ensure consistency with previous behavior and typical parsing expectations if locale is not US.
+            amountString = formatter.string(from: NSNumber(value: expense.amount)) ?? ""
             date = expense.date
             selectedPayerId = expense.payer?.id
             selectedParticipantIds = Set(expense.participants?.map { $0.id } ?? [])
@@ -215,7 +221,7 @@ class AddExpenseViewModel {
      ) throws {
          do {
              if let expense = expenseToEdit {
-                 updateExistingExpense(
+                 try updateExistingExpense( // Mark with try
                      expense: expense,
                      description: description,
                      amount: amount,
@@ -224,7 +230,7 @@ class AddExpenseViewModel {
                      splitDetailsDict: splitDetailsDict
                  )
              } else {
-                 createNewExpense(
+                 try createNewExpense( // Mark with try
                      context: context,
                      description: description,
                      amount: amount,
@@ -236,7 +242,9 @@ class AddExpenseViewModel {
              }
              
              try context.save()
-         } catch {
+         } catch let specificError as ExpenseError { // If it's already an ExpenseError
+             throw specificError // Rethrow it as is
+         } catch { // For other errors (like context.save() errors)
              print("Database Save/Update Error on saveExpense: \(error.localizedDescription)")
              throw ExpenseError.databaseSaveError(error)
          }
@@ -249,14 +257,21 @@ class AddExpenseViewModel {
          payer: Person,
          participants: [Person],
          splitDetailsDict: [UUID: Double]?
-     ) {
-         expense.expenseDescription = description
-         expense.amount = amount
-         expense.date = date
-         expense.payer = payer
-         expense.participants = participants
-         expense.splitType = selectedSplitType
-         expense.splitDetails = splitDetailsDict
+     ) throws { // Add throws
+        expense.expenseDescription = description
+        expense.amount = amount
+        expense.date = date
+        expense.payer = payer
+        expense.participants = participants
+        expense.splitType = selectedSplitType
+        do {
+            try expense.splitDetails = splitDetailsDict
+        } catch let error as ExpenseError { // Catch specific ExpenseError
+            throw error // Re-throw the caught ExpenseError
+        } catch {
+            // Handle other potential errors if necessary, or just rethrow
+            throw error 
+        }
      }
      
      private func createNewExpense(
@@ -267,17 +282,24 @@ class AddExpenseViewModel {
          participants: [Person],
          group: Group,
          splitDetailsDict: [UUID: Double]?
-     ) {
-         let newExpense = Expense(
-             description: description,
-             amount: amount,
+     ) throws { // Add throws
+        let newExpense: Expense
+        do {
+            newExpense = try Expense( // Add try
+                description: description,
+                amount: amount,
              date: date,
              payer: payer,
              participants: participants,
              group: group,
              splitType: selectedSplitType,
              splitDetails: splitDetailsDict
-         )
-         context.insert(newExpense)
+            )
+        } catch let error as ExpenseError { // Catch specific ExpenseError
+            throw error // Re-throw the caught ExpenseError
+        } catch {
+            throw error 
+        }
+        context.insert(newExpense)
      }
  }
