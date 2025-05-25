@@ -31,6 +31,11 @@
 		193D46342DB8349C004B9CB8 /* BalanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193D46332DB8349C004B9CB8 /* BalanceView.swift */; };
 		193D46362DB837D0004B9CB8 /* SettlementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193D46352DB837D0004B9CB8 /* SettlementView.swift */; };
 		193D46392DB838E0004B9CB8 /* AddExpenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193D46382DB838E0004B9CB8 /* AddExpenseView.swift */; };
+		1955BF6E2DDD510800078F33 /* ExpenseRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1955BF6D2DDD510800078F33 /* ExpenseRowView.swift */; };
+		1955BF702DDD52D300078F33 /* MemberRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1955BF6F2DDD52D300078F33 /* MemberRowView.swift */; };
+		19756C2F2DDB7E7C00E85453 /* CustomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19756C2E2DDB7E7B00E85453 /* CustomButton.swift */; };
+		1995A0FD2DDC5360007B3A93 /* BalanceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1995A0FC2DDC5360007B3A93 /* BalanceCardView.swift */; };
+		19C436942DC260FD00E1D8C7 /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C436932DC260FD00E1D8C7 /* CustomAlertView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +83,11 @@
 		193D46332DB8349C004B9CB8 /* BalanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceView.swift; sourceTree = "<group>"; };
 		193D46352DB837D0004B9CB8 /* SettlementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementView.swift; sourceTree = "<group>"; };
 		193D46382DB838E0004B9CB8 /* AddExpenseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExpenseView.swift; sourceTree = "<group>"; };
+		1955BF6D2DDD510800078F33 /* ExpenseRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseRowView.swift; sourceTree = "<group>"; };
+		1955BF6F2DDD52D300078F33 /* MemberRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberRowView.swift; sourceTree = "<group>"; };
+		19756C2E2DDB7E7B00E85453 /* CustomButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomButton.swift; sourceTree = "<group>"; };
+		1995A0FC2DDC5360007B3A93 /* BalanceCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceCardView.swift; sourceTree = "<group>"; };
+		19C436932DC260FD00E1D8C7 /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +118,7 @@
 		193D45D32DB81D74004B9CB8 = {
 			isa = PBXGroup;
 			children = (
+				19C669622DBAE4FD00DB6BEC /* Introducion */,
 				193D461B2DB81FE3004B9CB8 /* ViewModel */,
 				193D46122DB81E97004B9CB8 /* Views */,
 				193D46112DB81E8B004B9CB8 /* Models */,
@@ -211,6 +222,9 @@
 				193D46372DB838D5004B9CB8 /* AddExpense */,
 				193D46302DB832E2004B9CB8 /* MemberViews */,
 				193D46282DB828D7004B9CB8 /* GroupDetailView.swift */,
+				1995A0FC2DDC5360007B3A93 /* BalanceCardView.swift */,
+				1955BF6F2DDD52D300078F33 /* MemberRowView.swift */,
+				1955BF6D2DDD510800078F33 /* ExpenseRowView.swift */,
 			);
 			path = Details;
 			sourceTree = "<group>";
@@ -232,6 +246,15 @@
 				193D46382DB838E0004B9CB8 /* AddExpenseView.swift */,
 			);
 			path = AddExpense;
+			sourceTree = "<group>";
+		};
+		19C669622DBAE4FD00DB6BEC /* Introducion */ = {
+			isa = PBXGroup;
+			children = (
+				19C436932DC260FD00E1D8C7 /* CustomAlertView.swift */,
+				19756C2E2DDB7E7B00E85453 /* CustomButton.swift */,
+			);
+			path = Introducion;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -365,6 +388,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				193D46152DB81F08004B9CB8 /* Expense.swift in Sources */,
+				1955BF6E2DDD510800078F33 /* ExpenseRowView.swift in Sources */,
 				193D46172DB81F98004B9CB8 /* Color+Hex.swift in Sources */,
 				193D46292DB828D7004B9CB8 /* GroupDetailView.swift in Sources */,
 				193D461E2DB81FE3004B9CB8 /* GroupListViewModel.swift in Sources */,
@@ -372,8 +396,12 @@
 				193D460E2DB81E6E004B9CB8 /* Person.swift in Sources */,
 				193D46202DB82065004B9CB8 /* GroupRowView.swift in Sources */,
 				193D46342DB8349C004B9CB8 /* BalanceView.swift in Sources */,
+				1955BF702DDD52D300078F33 /* MemberRowView.swift in Sources */,
 				193D460A2DB81E3F004B9CB8 /* HomeView.swift in Sources */,
 				193D46362DB837D0004B9CB8 /* SettlementView.swift in Sources */,
+				19C436942DC260FD00E1D8C7 /* CustomAlertView.swift in Sources */,
+				1995A0FD2DDC5360007B3A93 /* BalanceCardView.swift in Sources */,
+				19756C2F2DDB7E7C00E85453 /* CustomButton.swift in Sources */,
 				193D46322DB8332D004B9CB8 /* EditMemberView.swift in Sources */,
 				193D45E22DB81D74004B9CB8 /* ContentView.swift in Sources */,
 				193D46252DB8220F004B9CB8 /* AddMemberView.swift in Sources */,

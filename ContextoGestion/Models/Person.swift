@@ -14,6 +14,7 @@ final class Person {
     @Attribute(.unique) var id: UUID
     var name: String
     var creationDate: Date
+    
 
     @Relationship(inverse: \Group.members) var groups: [Group]?
 

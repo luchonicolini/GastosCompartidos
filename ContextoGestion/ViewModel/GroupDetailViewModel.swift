@@ -11,14 +11,20 @@ import Observation
 import Foundation
 import SwiftUI
 
+struct FormattedSettlement: Identifiable, Hashable {
+    let id = UUID()
+    let payerName: String
+    let payeeName: String
+    let amount: Double
+    let formattedAmount: String
+}
+
 @Observable
 class GroupDetailViewModel {
 
     var memberBalances: [MemberBalance] = []
     private var currentGroup: Group?
 
-    // MARK: - Public API
-    
     @MainActor
     func setGroup(_ group: Group) {
         self.currentGroup = group
@@ -44,8 +50,6 @@ class GroupDetailViewModel {
         processExpensesForBalances(expenses: expenses, currentMemberIDs: currentMemberIDs, balances: &balances)
         updateMemberBalancesArray(from: balances, members: members)
     }
-    
-    // MARK: - Member Management
     
     @MainActor
     func addMember(_ person: Person, to group: Group, context: ModelContext) throws {
@@ -85,7 +89,6 @@ class GroupDetailViewModel {
             throw error
         } catch {
             context.delete(newPerson)
-            print("Database Save Error on addNewPersonAndAddToGroup: \(error.localizedDescription)")
             throw PersonError.databaseSaveError(error)
         }
     }
@@ -93,7 +96,6 @@ class GroupDetailViewModel {
     @MainActor
     func updatePerson(person: Person, name: String, context: ModelContext) throws {
         guard currentGroup?.members?.contains(where: { $0.id == person.id }) ?? false else {
-            print("WARN: Attempting to edit person not in the current group context.")
             return
         }
 
@@ -108,16 +110,12 @@ class GroupDetailViewModel {
         }
     }
     
-    // MARK: - Expense Management
-    
     @MainActor
     func deleteExpense(_ expense: Expense, context: ModelContext) {
         guard let group = expense.group, group == self.currentGroup else { return }
         context.delete(expense)
         calculateBalances(for: group)
     }
-    
-    // MARK: - Settlement Calculations
     
     @MainActor
     func suggestSettlements() -> [String] {
@@ -138,8 +136,8 @@ class GroupDetailViewModel {
             let amountToTransfer = min(abs(currentDebtor.balance), currentCreditor.balance).rounded(toPlaces: 2)
 
             if amountToTransfer < 0.01 {
-                if abs(currentDebtor.balance) >= 0.01 { tempDebtors.insert(currentDebtor, at: 0) }
-                if currentCreditor.balance >= 0.01 { tempCreditors.insert(currentCreditor, at: 0) }
+                if abs(currentDebtor.balance) >= 0.01 { insertSorted(currentDebtor, into: &tempDebtors) { $0.balance >= $1.balance } }
+                if currentCreditor.balance >= 0.01 { insertSorted(currentCreditor, into: &tempCreditors) { $0.balance <= $1.balance } }
                 continue
             }
 
@@ -151,19 +149,60 @@ class GroupDetailViewModel {
                                    tempCreditors: &tempCreditors)
         }
 
-        if !tempDebtors.isEmpty || !tempCreditors.isEmpty {
-            print("WARN: Quedaron saldos residuales después de la liquidación simple.")
-        }
-
         return settlements.isEmpty ? ["¡Todas las cuentas están saldadas!"] : settlements
     }
-    
-    // MARK: - Private Helpers
+
+    @MainActor
+    func suggestFormattedSettlements() -> [FormattedSettlement] {
+        let balancesToSettle = memberBalances.filter { abs($0.balance) > 0.01 }
+        guard !balancesToSettle.isEmpty else { return [] }
+
+        var Fsettlements: [FormattedSettlement] = []
+        var tempDebtors = balancesToSettle.filter { $0.balance < -0.01 }.sorted { $0.balance < $1.balance }
+        var tempCreditors = balancesToSettle.filter { $0.balance > 0.01 }.sorted { $0.balance > $1.balance }
+
+        let formatter = createCurrencyFormatter()
+
+        while !tempDebtors.isEmpty && !tempCreditors.isEmpty {
+            guard var currentDebtor = tempDebtors.first, var currentCreditor = tempCreditors.first else { break }
+            tempDebtors.removeFirst()
+            tempCreditors.removeFirst()
+
+            let amountToTransfer = min(abs(currentDebtor.balance), currentCreditor.balance).rounded(toPlaces: 2)
+
+            if amountToTransfer < 0.01 {
+                if abs(currentDebtor.balance) >= 0.01 { insertSorted(currentDebtor, into: &tempDebtors) { $0.balance >= $1.balance } }
+                if currentCreditor.balance >= 0.01 { insertSorted(currentCreditor, into: &tempCreditors) { $0.balance <= $1.balance } }
+                continue
+            }
+
+            let formattedAmountStr = formatter.string(from: amountToTransfer as NSNumber) ?? "\(String(format: "%.2f", amountToTransfer))"
+            
+            Fsettlements.append(FormattedSettlement(
+                payerName: currentDebtor.name,
+                payeeName: currentCreditor.name,
+                amount: amountToTransfer,
+                formattedAmount: formattedAmountStr
+            ))
+
+            currentDebtor.balance = (currentDebtor.balance + amountToTransfer).rounded(toPlaces: 2)
+            currentCreditor.balance = (currentCreditor.balance - amountToTransfer).rounded(toPlaces: 2)
+
+            if abs(currentDebtor.balance) >= 0.01 {
+                insertSorted(currentDebtor, into: &tempDebtors) { $0.balance >= $1.balance }
+            }
+            if currentCreditor.balance >= 0.01 {
+                insertSorted(currentCreditor, into: &tempCreditors) { $0.balance <= $1.balance }
+            }
+        }
+        return Fsettlements
+    }
     
     private func createCurrencyFormatter() -> NumberFormatter {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.maximumFractionDigits = 2
+        formatter.locale = Locale.current
         return formatter
     }
     
@@ -278,10 +317,8 @@ class GroupDetailViewModel {
             }
             
             if abs(calculatedSum - expenseAmountRounded) > 0.01 {
-                print("WARN: Gasto \(expense.expenseDescription) (Por Monto) - Suma detalles (\(calculatedSum)) != Monto total (\(expenseAmountRounded)). Usando detalles.")
             }
         } else {
-            print("ERROR: Gasto \(expense.expenseDescription) (Por Monto) - Faltan detalles. Fallback a igual.")
             return calculateEqualShares(expense: expense, participants: participants)
         }
         
@@ -306,7 +343,6 @@ class GroupDetailViewModel {
                 sharesToDebit[firstParticipant.id]? += roundingDifference
             }
         } else {
-            print("ERROR: Gasto \(expense.expenseDescription) (Por %) - Faltan detalles. Fallback a igual.")
             return calculateEqualShares(expense: expense, participants: participants)
         }
         
@@ -337,11 +373,9 @@ class GroupDetailViewModel {
                     sharesToDebit[firstParticipant.id]? += roundingDifference
                 }
             } else {
-                print("ERROR: Gasto \(expense.expenseDescription) (Por Partes) - Suma de partes es 0. Fallback a igual.")
                 return calculateEqualShares(expense: expense, participants: participants)
             }
         } else {
-            print("ERROR: Gasto \(expense.expenseDescription) (Por Partes) - Faltan detalles. Fallback a igual.")
             return calculateEqualShares(expense: expense, participants: participants)
         }
         

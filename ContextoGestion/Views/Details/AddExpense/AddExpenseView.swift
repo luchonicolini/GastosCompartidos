@@ -10,296 +10,370 @@ import SwiftUI
 import SwiftData
 
 struct AddExpenseView: View {
-    // El grupo al que pertenece el gasto
+
+    var onSave: (() -> Void)?
     let group: Group
-    // El gasto a editar (opcional, nil si estamos añadiendo)
     var expenseToEdit: Expense?
 
-    // ViewModel para manejar la lógica y el estado del formulario
     @State private var viewModel = AddExpenseViewModel()
+    @State private var isSaving = false // <-- PASO 1: Nuevo estado
 
-    // Contexto y dismiss del entorno
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) var dismiss
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
-    // Estado para la alerta de error
     @State private var showingAlert = false
     @State private var alertMessage = ""
 
-    // Determinar si estamos en modo edición
+    @FocusState private var descriptionFieldIsFocused: Bool
+    @FocusState private var amountFieldIsFocused: Bool
+
     private var isEditing: Bool { expenseToEdit != nil }
 
-    // Formateador de números para los campos de división no equitativa
-     private let numberFormatter: NumberFormatter = {
+    private let numberFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 0 // Permite no escribir decimales si no se quiere
-        formatter.locale = Locale.current // Usa el separador decimal local
+        formatter.minimumFractionDigits = 0
+        formatter.locale = Locale.current
         return formatter
     }()
 
     var body: some View {
-        NavigationView {
-            Form {
-                // Sección 1: Detalles Básicos del Gasto
-                Section("Detalles del Gasto") {
-                    TextField("Descripción", text: $viewModel.description)
-                    TextField("Monto Total", text: $viewModel.amountString)
-                        .keyboardType(.decimalPad) // Teclado numérico para el monto
-                    DatePicker("Fecha", selection: $viewModel.date, displayedComponents: .date)
-                }
-
-                // Sección 2: Pagador
-                Section("¿Quién Pagó?") {
-                    Picker("Pagador", selection: $viewModel.selectedPayerId) {
-                        Text("Nadie seleccionado").tag(Optional<UUID>(nil)) // Opción nula
-                        ForEach(viewModel.availableMembers()) { member in
-                            Text(member.name).tag(Optional(member.id))
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        TextField("Descripción (Ej: Cena, Supermercado)", text: $viewModel.description)
+                            .focused($descriptionFieldIsFocused)
+                            .padding(.vertical, 10)
+                        Divider()
+                        HStack(spacing: 0) {
+                            Text(Locale.current.currencySymbol ?? "$")
+                                .foregroundStyle(.gray)
+                                .padding(.trailing, 4)
+                            TextField("0.00", text: $viewModel.amountString)
+                                .keyboardType(.decimalPad)
+                                .focused($amountFieldIsFocused)
+                                .multilineTextAlignment(.leading)
                         }
+                        .padding(.vertical, 10)
+                        Divider()
+                        DatePicker("Fecha", selection: $viewModel.date, displayedComponents: .date)
+                            .padding(.vertical, 6)
                     }
-                    // Estilo rueda puede ser mejor si hay muchos miembros
-                    // .pickerStyle(.wheel)
-                }
+                    .padding(.horizontal)
+                    .background(Color("SecondaryBackground").opacity(0.7), in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal)
 
-                // Sección 3: Participantes
-                Section("¿Quiénes Participaron?") {
-                    // Un MultiSelector sería ideal aquí. Usaremos una lista simple por ahora.
-                    List(viewModel.availableMembers()) { member in
-                         HStack {
-                              Text(member.name)
-                              Spacer()
-                              if viewModel.selectedParticipantIds.contains(member.id) {
-                                  Image(systemName: "checkmark.circle.fill")
-                                       .foregroundStyle(.blue)
-                              } else {
-                                   Image(systemName: "circle")
-                                       .foregroundStyle(.gray)
-                              }
-                         }
-                         .contentShape(Rectangle()) // Hace toda la fila tappable
-                         .onTapGesture {
-                              toggleParticipantSelection(member.id)
-                         }
-                    }
-                    // Botones para seleccionar/deseleccionar todos
-                    HStack {
-                         Button("Seleccionar Todos") {
-                             viewModel.selectedParticipantIds = Set(viewModel.availableMembers().map { $0.id })
-                         }
-                         .buttonStyle(.borderless)
-                         Spacer()
-                         Button("Deseleccionar Todos") {
-                             viewModel.selectedParticipantIds = []
-                             // También limpiar inputs de división si se deselecciona todo
-                              if viewModel.selectedSplitType != .equally {
-                                   viewModel.splitInputValues = [:]
-                              }
-                         }
-                         .buttonStyle(.borderless)
-                         .foregroundStyle(.red)
-                    }
-                }
-
-                // Sección 4: Tipo de División
-                Section("¿Cómo Dividir el Gasto?") {
-                    Picker("Método de División", selection: $viewModel.selectedSplitType) {
-                        ForEach(SplitType.allCases) { type in
-                            Text(type.localizedDescription).tag(type)
-                        }
-                    }
-                    // .pickerStyle(.segmented) // Estilo segmentado si prefieres
-                }
-
-                // Sección 5: Detalles de División (Condicional)
-                // Solo se muestra si el tipo de división NO es "Igual" y hay participantes seleccionados
-                 if viewModel.selectedSplitType != .equally && !viewModel.selectedParticipantIds.isEmpty {
-                      Section(header: Text("Detalles de División (\(viewModel.selectedSplitType.localizedDescription))")) {
-
-                           // Filtrar miembros disponibles para mostrar solo los participantes seleccionados
-                           let selectedParticipants = viewModel.availableMembers().filter {
-                                viewModel.selectedParticipantIds.contains($0.id)
-                           }
-
-                           ForEach(selectedParticipants) { participant in
-                               HStack {
-                                    Text(participant.name)
-                                    Spacer()
-                                    // TextField para el input específico (monto, %, partes)
-                                    TextField(splitInputPlaceholder(), text: splitInputBinding(for: participant.id))
-                                         .keyboardType(.decimalPad)
-                                         .multilineTextAlignment(.trailing)
-                                         //.frame(width: 100) // Ajusta el ancho si es necesario
-                               }
-                           }
-                           // Mostrar la suma actual de los inputs para ayudar al usuario
-                            if let sumInfo = splitInputSumInfo() {
-                                 Text(sumInfo)
-                                     .font(.caption)
-                                     .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("¿Quién Pagó?")
+                            .font(.headline)
+                            .foregroundStyle(Color.primary)
+                            .padding(.horizontal)
+                        Picker("Pagador", selection: $viewModel.selectedPayerId) {
+                            Text("Nadie seleccionado").tag(nil as UUID?)
+                            ForEach(viewModel.availableMembers()) { member in
+                                Text(member.name).tag(member.id as UUID?)
                             }
-                      }
-                 }
+                        }
+                        .pickerStyle(.navigationLink)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 10))
+                        .padding(.horizontal)
+                    }
 
-            } // Fin Form
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("¿Quiénes Participaron?")
+                            .font(.headline)
+                            .foregroundStyle(Color.primary)
+                            .padding(.horizontal)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 15) {
+                                ForEach(viewModel.availableMembers()) { member in
+                                    ParticipantAvatar(
+                                        member: member,
+                                        isSelected: viewModel.selectedParticipantIds.contains(member.id),
+                                        accentColor: group.displayColor
+                                    )
+                                    .onTapGesture {
+                                        withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
+                                             toggleParticipantSelection(member.id)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 5)
+                        }
+                        HStack {
+                             Button("Todos") {
+                                 viewModel.selectedParticipantIds = Set(viewModel.availableMembers().map { $0.id })
+                             }
+                                .buttonStyle(.bordered)
+                                .tint(group.displayColor)
+                             Button("Ninguno") {
+                                 viewModel.selectedParticipantIds = []
+                                  if viewModel.selectedSplitType != .equally {
+                                       viewModel.splitInputValues = [:]
+                                  }
+                             }
+                                .buttonStyle(.bordered)
+                                .tint(.gray)
+                             Spacer()
+                        }
+                        .padding(.horizontal)
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("¿Cómo Dividir?")
+                            .font(.headline)
+                            .foregroundStyle(Color.primary)
+
+                        Picker("Método", selection: $viewModel.selectedSplitType.animation()) {
+                            ForEach(SplitType.allCases) { type in
+                                Text(type.localizedDescription).tag(type)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(.systemGray5),
+                                    in: RoundedRectangle(cornerRadius: 10))
+
+                        if viewModel.selectedSplitType != .equally && !viewModel.selectedParticipantIds.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                               Text("Detalles de División: \(viewModel.selectedSplitType.localizedDescription)")
+                                   .font(.subheadline).bold()
+                                   .foregroundStyle(Color.secondary)
+                               let selectedParticipants = viewModel.availableMembers()
+                                   .filter { viewModel.selectedParticipantIds.contains($0.id) }
+                                   .sorted { $0.name < $1.name }
+                               ForEach(selectedParticipants) { participant in
+                                   HStack {
+                                       Text(participant.name)
+                                            .foregroundStyle(Color.primary)
+                                        Spacer()
+                                        TextField(splitInputPlaceholder(), text: splitInputBinding(for: participant.id))
+                                            .keyboardType(.decimalPad)
+                                            .multilineTextAlignment(.trailing)
+                                            .padding(8)
+                                            .background(Color(.systemGray4).opacity(0.8),
+                                                        in: RoundedRectangle(cornerRadius: 8))
+                                            .foregroundStyle(Color.primary)
+                                            .frame(width: 100)
+                                   }
+                               }
+                               if let sumInfo = splitInputSumInfo() {
+                                  Text(sumInfo)
+                                        .font(.caption)
+                                        .foregroundStyle(Color.secondary)
+                                        .padding(.top, 5)
+                               }
+                            }
+                            .padding()
+                            .background(Color(.systemGray6),
+                                        in: RoundedRectangle(cornerRadius: 10))
+                            .padding(.top, 5)
+                            .transition(.asymmetric(insertion: .scale(scale: 0.9, anchor: .top).combined(with: .opacity),
+                                                    removal: .opacity.combined(with: .scale(scale: 0.9, anchor: .top))))
+                        }
+                    }
+                    .padding(.horizontal)
+                    Spacer()
+                }
+                .padding(.vertical)
+            }
+            .background(
+                Color("AppBackground")
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+//                        descriptionFieldIsFocused = false
+//                        amountFieldIsFocused = false
+                    }
+            )
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(isEditing ? "Editar Gasto" : "Añadir Gasto")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancelar") {
-                        dismiss()
-                    }
+                    Button("Cancelar") { dismiss() }
+                        .disabled(isSaving) // Deshabilitar Cancelar mientras se guarda
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Guardar") {
-                        saveExpense()
+                    // <-- PASO 2: Modificar el botón de Guardar
+                    if isSaving {
+                        ProgressView()
+                            .frame(width: 30, height: 30) // Darle un tamaño para que sea visible
+                    } else {
+                        Button("Guardar") {
+                            triggerSaveProcess() // Llamar a la nueva función
+                        }
+                        .fontWeight(.bold)
+                   
                     }
-                    // Podrías añadir una validación más estricta en .disabled si quieres
-                    // .disabled(viewModel.description.isEmpty || viewModel.amountString.isEmpty ...)
                 }
             }
-            .task {
-                 // Configurar el ViewModel cuando la vista aparece
-                 // Pasamos el grupo, miembros y el gasto a editar (si existe)
-                 viewModel.setup(expense: expenseToEdit, members: group.members ?? [])
-            }
-            .alert("Error al Guardar", isPresented: $showingAlert) {
-                Button("OK") { }
-            } message: {
-                Text(alertMessage)
-            }
-        } // Fin NavigationView
-    } // Fin body
-
-    // --- Funciones Auxiliares ---
-
-    // Helper para manejar la selección/deselección de participantes
+            .task { viewModel.setup(expense: expenseToEdit, members: group.members ?? []) }
+            .customAlert( isPresented: $showingAlert, title: "Error al Guardar", message: LocalizedStringKey(alertMessage) )
+            .scrollDismissesKeyboard(.interactively)
+        }
+    }
+    
     private func toggleParticipantSelection(_ memberId: UUID) {
         if viewModel.selectedParticipantIds.contains(memberId) {
             viewModel.selectedParticipantIds.remove(memberId)
-             // Limpiar input de división si se deselecciona un participante y el tipo no es igual
-              if viewModel.selectedSplitType != .equally {
-                   viewModel.splitInputValues.removeValue(forKey: memberId)
-              }
+            if viewModel.selectedSplitType != .equally {
+                viewModel.splitInputValues.removeValue(forKey: memberId)
+            }
         } else {
             viewModel.selectedParticipantIds.insert(memberId)
-             // Opcional: Pre-rellenar con "0" o vacío cuando se selecciona
-              if viewModel.selectedSplitType != .equally {
-                   // No añadir nada aquí, dejar que el usuario ingrese
-              }
         }
     }
-
-    // Helper para obtener el placeholder correcto para los inputs de división
+    
     private func splitInputPlaceholder() -> String {
         switch viewModel.selectedSplitType {
         case .byAmount: return "Monto"
         case .byPercentage: return "%"
         case .byShares: return "Partes"
-        case .equally: return "" // No debería mostrarse
+        case .equally: return ""
         }
     }
-
-    // Helper para crear un Binding<String> para cada entrada del diccionario splitInputValues
+    
     private func splitInputBinding(for participantId: UUID) -> Binding<String> {
         Binding<String>(
             get: { viewModel.splitInputValues[participantId] ?? "" },
             set: { newValue in
-                 // Validar que solo se ingresen números y el separador decimal correcto
-                 let filtered = newValue.filter { "0123456789.,".contains($0) }
-                 // Reemplazar comas por puntos si es necesario para el formateador
-                 let standardized = filtered.replacingOccurrences(of: ",", with: ".")
-                 // Evitar múltiples puntos decimales
-                 let components = standardized.components(separatedBy: ".")
-                 if components.count <= 2 {
-                      viewModel.splitInputValues[participantId] = standardized
-                 } else {
-                      // Si ya hay un punto y se intenta añadir otro, mantener el valor anterior
-                      // (o eliminar el último carácter si se quiere)
-                      if let existingValue = viewModel.splitInputValues[participantId] {
-                           viewModel.splitInputValues[participantId] = String(existingValue)
-                      }
-                 }
+                let filtered = newValue.filter { "0123456789.,".contains($0) }
+                let standardized = filtered.replacingOccurrences(of: ",", with: ".")
+                let components = standardized.components(separatedBy: ".")
+                if components.count <= 2 {
+                    viewModel.splitInputValues[participantId] = standardized
+                } else {
+                    if let existingValue = viewModel.splitInputValues[participantId] {
+                        viewModel.splitInputValues[participantId] = String(existingValue)
+                    }
+                }
             }
         )
     }
-
-    // Helper para mostrar la suma de los inputs de división no equitativa
-     private func splitInputSumInfo() -> String? {
-         guard viewModel.selectedSplitType != .equally else { return nil }
-
-         let relevantValues = viewModel.selectedParticipantIds.compactMap { id in
-             viewModel.splitInputValues[id]
-         }
-         guard !relevantValues.isEmpty else { return "Total: 0" } // Si no hay inputs, suma es 0
-
-         var sum: Double = 0
-         for stringValue in relevantValues {
-              // Usar el formateador para interpretar el string del usuario
-              if let number = numberFormatter.number(from: stringValue) {
-                   sum += number.doubleValue
-              } else if !stringValue.isEmpty {
-                    // Si no se puede parsear y no está vacío, indica un problema
-                   return "Valor inválido detectado"
-              }
-         }
-
-         let formattedSum = String(format: "%.2f", sum)
-
-         switch viewModel.selectedSplitType {
-             case .byAmount: return "Suma: \(formattedSum)"
-             case .byPercentage: return "Suma: \(formattedSum)%"
-             case .byShares: return "Total Partes: \(formattedSum)"
-             case .equally: return nil
-         }
-     }
-
-
-    // Función para guardar el gasto
+    
+    private func splitInputSumInfo() -> String? {
+        guard viewModel.selectedSplitType != .equally else { return nil }
+        let relevantValues = viewModel.selectedParticipantIds.compactMap { id in
+            viewModel.splitInputValues[id]
+        }
+        guard !relevantValues.isEmpty else { return "Total: 0" }
+        var sum: Double = 0
+        for stringValue in relevantValues {
+            if let number = numberFormatter.number(from: stringValue) {
+                sum += number.doubleValue
+            } else if !stringValue.isEmpty {
+                return "Valor inválido detectado"
+            }
+        }
+        let formattedSum = String(format: "%.2f", sum)
+        switch viewModel.selectedSplitType {
+        case .byAmount: return "Suma: \(formattedSum)"
+        case .byPercentage: return "Suma: \(formattedSum)%"
+        case .byShares: return "Total Partes: \(formattedSum)"
+        case .equally: return nil
+        }
+    }
+    
+    // <-- PASO 3: Ajustar la función de guardado
     @MainActor
-    private func saveExpense() {
-        do {
-            // Llama a la función del ViewModel para guardar/actualizar
-            try viewModel.saveExpense(for: group, context: modelContext)
-            // Si tiene éxito, cierra la vista
-            dismiss()
-        } catch let error as ExpenseError {
-             // Captura errores específicos lanzados por el ViewModel
-             alertMessage = error.localizedDescription
-             showingAlert = true
-        } catch {
-            // Otros errores inesperados
-            print("Error inesperado al guardar gasto: \(error)")
-            alertMessage = "Ocurrió un error inesperado. \(error.localizedDescription)"
-            showingAlert = true
+    private func triggerSaveProcess() {
+        // Ocultar teclado antes de intentar guardar
+        descriptionFieldIsFocused = false
+        amountFieldIsFocused = false
+        
+        isSaving = true
+        
+        // Usamos un Task para asegurar que la UI se actualice (isSaving = true)
+        // y para manejar el final de la operación de guardado de forma limpia.
+        Task {
+            do {
+                // Intenta guardar el gasto a través del ViewModel
+                try viewModel.saveExpense(for: group, context: modelContext)
+                
+                // Si tiene éxito:
+                onSave?() // Llama al callback onSave si existe
+                isSaving = false // Restablece el estado
+                dismiss()    // Cierra la vista
+                
+            } catch let error as ExpenseError {
+                // Si hay un error conocido de la app:
+                isSaving = false // Restablece el estado
+                alertMessage = error.localizedDescription
+                showingAlert = true
+                
+            } catch {
+                // Si hay un error inesperado:
+                isSaving = false // Restablece el estado
+                alertMessage = "Ocurrió un error inesperado. \(error.localizedDescription)"
+                showingAlert = true
+            }
         }
     }
 }
 
 // --- Vista Previa (Preview) ---
+// (El código del Preview no necesita cambios)
 #Preview {
-    // 1. Configura el contenedor
+    // ... (código del preview existente) ...
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Group.self, Person.self, Expense.self, configurations: config)
-
-    // 2. Crea datos de ejemplo
     let p1 = Person(name: "Frodo")
     let p2 = Person(name: "Sam")
     let p3 = Person(name: "Pippin")
     let group = Group(name: "Comunidad")
     group.members = [p1, p2, p3]
-
-    // Opcional: un gasto para probar el modo edición
-    let expenseToEdit = Expense(description: "Lembas", amount: 25.5, payer: p1, participants: [p1, p2], group: group, splitType: .equally)
-
     container.mainContext.insert(p1)
     container.mainContext.insert(p2)
     container.mainContext.insert(p3)
     container.mainContext.insert(group)
-    // container.mainContext.insert(expenseToEdit) // Descomenta para probar edición
+    return AddExpenseView(group: group)
+        .modelContainer(container)
+}
 
-    // 3. Retorna la vista
-    return AddExpenseView(group: group) // Para añadir nuevo
-    // return AddExpenseView(group: group, expenseToEdit: expenseToEdit) // Para editar
-           .modelContainer(container)
+
+struct ParticipantAvatar: View {
+    // Datos que necesita la vista para mostrarse
+    let member: Person  // La persona a representar
+    let isSelected: Bool // Si está seleccionada o no
+    let accentColor: Color // El color de acento (probablemente group.displayColor)
+
+    var body: some View {
+        VStack(spacing: 4) { // Espacio entre el círculo y el nombre
+            // Círculo con la inicial
+            Text(member.name.prefix(1)) // Muestra la primera letra del nombre
+                .font(isSelected ? .title2 : .title3) // Fuente un poco más grande si está seleccionado
+                .fontWeight(.medium)
+                 // Cambia el tamaño del frame si está seleccionado
+                .frame(width: isSelected ? 50 : 45, height: isSelected ? 50 : 45)
+                // Fondo: usa el color de acento con opacidad si está seleccionado, o un gris si no
+                .background(isSelected ? accentColor.opacity(0.3) : Color(.systemGray5))
+                // Color de la letra: usa el color de acento si está seleccionado, o el primario si no
+                .foregroundStyle(isSelected ? accentColor : Color(.white)) // <- Usa tu color adaptativo
+                .clipShape(Circle()) // Forma circular
+                // Añade un borde de color de acento si está seleccionado
+                .overlay(
+                    Circle()
+                        .stroke(isSelected ? accentColor : Color.clear, lineWidth: 2.5) // Borde visible solo si isSelected es true
+                )
+
+            // Nombre debajo del círculo
+            Text(member.name)
+                .font(.caption) // Fuente pequeña para el nombre
+                .lineLimit(1) // Evita que el nombre ocupe múltiples líneas
+                 
+                .foregroundStyle(isSelected ? accentColor : Color(.white)) // <- Usa tu color adaptativo
+        }
+        .opacity(isSelected ? 1.0 : 0.75) // Hace que los no seleccionados se vean ligeramente más tenues
+        // Puedes añadir una animación si cambias la opacidad o el tamaño con .animation() aquí
+        // .animation(.spring(), value: isSelected)
+    }
 }

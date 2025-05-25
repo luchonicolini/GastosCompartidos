@@ -18,12 +18,15 @@ struct HomeView: View {
     @State private var alertMessage = ""
     @State private var errorDetails = ""
     @State private var isAnimating = false
+    
 
     @Query(sort: \Group.creationDate, order: .reverse) private var groups: [Group]
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
+                Color(Color("AppBackground"))
+                    .ignoresSafeArea(.all)
                 VStack {
                     if groups.isEmpty {
                         ContentUnavailableView(
@@ -56,13 +59,6 @@ struct HomeView: View {
                             }
                         }
                         .listStyle(.plain)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarLeading) {
-                                if !groups.isEmpty {
-                                    EditButton()
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -72,8 +68,8 @@ struct HomeView: View {
                     Image(systemName: "plus")
                         .font(.title.weight(.semibold))
                         .padding()
-                        .background(Color.blue)
-                        .foregroundStyle(.white)
+                        .background(Color(Color.primaryText))
+                        .foregroundStyle(Color.appBackground)
                         .clipShape(Circle())
                         .shadow(radius: 5, x: 0, y: 4)
                         .scaleEffect(isAnimating ? 1.1 : 1.0)
@@ -89,7 +85,6 @@ struct HomeView: View {
                         }
                     }
                 }
-
             }
             .navigationTitle("Mis Grupos")
             .navigationDestination(for: Group.self) { group in

@@ -5,21 +5,14 @@
 //  Created by Luciano Nicolini on 22/04/2025.
 //
 
-// Views/BalanceView.swift
-// Views/BalanceView.swift
+
 import SwiftUI
 import SwiftData 
-// --- Vista Principal ---
+
 struct BalanceView: View {
-    // Recibe el ViewModel actualizado del padre
-    // Asegúrate de que tu GroupDetailViewModel sea @Observable
     let viewModel: GroupDetailViewModel
 
-    // Estado local SÓLO para controlar el sheet de sugerencias
-    @State private var showingSettlements = false
-    @State private var settlements: [String] = []
-
-    // Formateador de moneda
+    // Formateador de moneda (se mantiene)
     private let currencyFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
@@ -29,120 +22,66 @@ struct BalanceView: View {
     }()
 
     var body: some View {
-        // El contenido de la vista, diseñado para ser incrustado
-        // dentro de una Section en la List de GroupDetailView.
-
-        // Verificar si hay balances para mostrar
-        if viewModel.memberBalances.isEmpty {
-            Text("No hay balances para mostrar. Añade miembros y gastos.")
-                .foregroundStyle(.secondary)
-                .listRowBackground(Color.clear) // Opcional
-        } else {
-            // Mostrar la lista de balances
-            ForEach(viewModel.memberBalances) { balanceInfo in
-                HStack {
-                    Text(balanceInfo.name)
-                    Spacer()
-                    Text(currencyFormatter.string(from: NSNumber(value: balanceInfo.balance)) ?? "\(String(format: "%.2f", balanceInfo.balance))")
-                        .foregroundStyle(balanceInfo.balance < -0.01 ? .red : (balanceInfo.balance > 0.01 ? .green : .primary))
-                        .fontWeight(.medium)
+        VStack(alignment: .leading, spacing: 10) {
+            if viewModel.memberBalances.isEmpty {
+                Text("No hay balances para mostrar. Añade miembros y gastos.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical)
+            } else {
+                ForEach(viewModel.memberBalances) { balanceInfo in
+                    BalanceCardView(balanceInfo: balanceInfo, currencyFormatter: currencyFormatter)
                 }
-            }
-
-            // Botón para mostrar las sugerencias (podría estar en GroupDetailView)
-            // Lo dejamos aquí como ejemplo si BalanceView tuviera más elementos
-            Button {
-                settlements = viewModel.suggestSettlements()
-                showingSettlements = true
-            } label: {
-                // Usamos un HStack para que ocupe toda la fila si está en una List
-                HStack {
-                     Label("Sugerir Liquidaciones", systemImage: "arrow.right.arrow.left.circle")
-                     Spacer() // Empuja el texto/icono a la izquierda
-                }
-                .contentShape(Rectangle()) // Hace toda el área tappable
-            }
-            // Aplicar el sheet a este botón o a un contenedor superior
-            .sheet(isPresented: $showingSettlements) {
-                 SettlementSuggestionsView(settlements: settlements)
-            }
-            // Quitar el estilo de botón por defecto si está dentro de una lista
-            // para que no se vea el fondo azul típico
-            .buttonStyle(.plain)
-
-
-        }
-        // Ya no hay .task ni .navigationTitle aquí
-    }
-}
-
-// --- Vista para mostrar Sugerencias en un Sheet ---
-// (Puedes mantenerla aquí o moverla a su propio archivo)
-struct SettlementSuggestionsView: View {
-    let settlements: [String]
-    @Environment(\.dismiss) var dismiss
-
-    var body: some View {
-        NavigationView {
-            List {
-                // Mensaje especial si todo está saldado
-                if settlements.count == 1 && settlements.first == "¡Todas las cuentas están saldadas!" {
-                    Text(settlements.first!)
-                        .foregroundStyle(.secondary)
-                } else {
-                    // Lista de sugerencias normales
-                    ForEach(settlements, id: \.self) { suggestion in
-                        Text(suggestion)
-                    }
-                }
-            }
-            .navigationTitle("Sugerencias de Liquidación")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                 ToolbarItem(placement: .confirmationAction) {
-                     Button("Hecho") {
-                         dismiss()
-                     }
-                 }
             }
         }
     }
 }
+
 
 
 // --- Vista Previa (Preview) ---
-#Preview {
-    // 1. Configura contenedor
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Group.self, Person.self, Expense.self, configurations: config)
+#Preview("BalanceView con Tarjetas") {
 
-    // 2. Crea datos de ejemplo
-    let p1 = Person(name: "Ana")
-    let p2 = Person(name: "Beto")
-    let group = Group(name: "Preview Group")
-    group.members = [p1, p2]
-    let expense1 = Expense(description: "Comida", amount: 50.0, payer: p1, participants: [p1, p2], group: group)
-
-    container.mainContext.insert(p1)
-    container.mainContext.insert(p2)
-    container.mainContext.insert(group)
-    container.mainContext.insert(expense1)
+    // 2. Crea datos de ejemplo USANDO MemberBalance
+    let mb1 = MemberBalance(id: UUID(), name: "Ana García", balance: -25.50)
+    let mb2 = MemberBalance(id: UUID(), name: "Carlos Vera", balance: 150.75)
+    let mb3 = MemberBalance(id: UUID(), name: "Laura Pausini", balance: 0.00)
+    let mb4 = MemberBalance(id: UUID(), name: "Pedro Suárez", balance: -10.00)
 
     // 3. Crea instancia de ViewModel para el Preview
     let previewViewModel = GroupDetailViewModel()
-    // Forzar cálculo de balances para la preview
-    // Usamos MainActor.assumeIsolated porque setGroup es @MainActor
-    // y el contexto del Preview puede no serlo.
-    MainActor.assumeIsolated {
-        previewViewModel.setGroup(group)
-    }
+    // Asignar los MemberBalance directamente al ViewModel para el preview
+    previewViewModel.memberBalances = [mb1, mb2, mb3, mb4]
 
-    // 4. Retorna la vista dentro de una List para simular GroupDetailView
-    return List {
-        Section("Balances (Preview)") {
-             // Pasar el viewModel creado para la preview
-             BalanceView(viewModel: previewViewModel)
-        }
+    return ScrollView {
+        BalanceView(viewModel: previewViewModel)
+            .padding()
     }
-    .modelContainer(container) // Inyecta el contenedor
+    // .modelContainer(container) // Solo si fuera necesario para el preview
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("BalanceCard Individual") {
+     let formatter = NumberFormatter()
+     formatter.numberStyle = .currency
+     formatter.maximumFractionDigits = 2
+     formatter.locale = Locale.current
+
+    return VStack(spacing: 10) {
+        BalanceCardView(
+            balanceInfo: MemberBalance(id: UUID(), name: "Luciano Deudor", balance: -123.45),
+            currencyFormatter: formatter
+        )
+        BalanceCardView(
+            balanceInfo: MemberBalance(id: UUID(), name: "Gema Acreedora", balance: 567.89),
+            currencyFormatter: formatter
+        )
+        BalanceCardView(
+            balanceInfo: MemberBalance(id: UUID(), name: "Neutral Nico", balance: 0.00),
+            currencyFormatter: formatter
+        )
+    }
+    .padding()
+    .background(Color(.systemGroupedBackground))
 }

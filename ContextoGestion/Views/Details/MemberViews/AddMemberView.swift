@@ -12,30 +12,23 @@ struct AddMemberView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) var dismiss
     
-    // Recibe el grupo al que se añadirán miembros
     let group: Group
-    //@State private var viewModel = GroupDetailViewModel()
     let viewModel: GroupDetailViewModel
     
-    // Query para buscar entre TODAS las personas existentes en la app
     @Query(sort: \Person.name) private var allPeople: [Person]
     @State private var newPersonName: String = ""
     @State private var searchText: String = ""
     
-    // Estados para manejar alertas de error
     @State private var showingErrorAlert = false
-    @State private var alertMessage = ""
+    @State private var alertMessage: String = ""
     
     @State private var showingSuccessAlert = false
-    @State private var successMessage = ""
+    @State private var successMessage: String = ""
     
-    // Personas filtradas por búsqueda que NO están ya en el grupo
     private var searchResults: [Person] {
         guard !searchText.isEmpty else { return [] }
-        
         let groupMemberIDs = Set(group.members?.map { $0.id } ?? [])
         let lowercasedSearch = searchText.lowercased()
-        
         return allPeople.filter { person in
             !groupMemberIDs.contains(person.id) &&
             person.name.lowercased().contains(lowercasedSearch)
@@ -48,6 +41,15 @@ struct AddMemberView: View {
                 Section("Añadir nueva persona") {
                     HStack {
                         TextField("Nombre", text: $newPersonName)
+                            .onChange(of: newPersonName) { oldValue, newValue in
+                                let allowedCharacters = CharacterSet.letters.union(.whitespaces)
+                                let filtered = newValue.unicodeScalars.filter { allowedCharacters.contains($0) }
+                                let filteredString = String(String.UnicodeScalarView(filtered))
+                                if filteredString != newValue {
+                                    newPersonName = filteredString
+                                }
+                            }
+                            .autocorrectionDisabled()
                         Button {
                             addNewPerson()
                         } label: {
@@ -60,7 +62,6 @@ struct AddMemberView: View {
                     }
                 }
                 
-                // --- Sección para Añadir Persona Existente (Resultados de Búsqueda) ---
                 Section(searchText.isEmpty ? "Añadir persona existente" : "Resultados de búsqueda") {
                     if !searchText.isEmpty {
                         if searchResults.isEmpty {
@@ -72,7 +73,7 @@ struct AddMemberView: View {
                                     addExistingPerson(person)
                                 } label: {
                                     Label(person.name, systemImage: "person")
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle(Color.primary)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .contentShape(Rectangle())
                                 }
@@ -82,12 +83,15 @@ struct AddMemberView: View {
                     } else {
                         Text("Escribe un nombre en la barra de búsqueda para encontrar personas existentes y añadirlas.")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
-                } // Fin Section Existentes
+                }
                 
             }
-            .navigationTitle("Añadir Miembro a \(group.name)")
+            .scrollContentBackground(.hidden)
+            .background(Color("AppBackground"))
+            
+            .navigationTitle("Añadir Miembro")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Buscar persona existente...")
             .autocorrectionDisabled(true)
@@ -96,75 +100,88 @@ struct AddMemberView: View {
                     Button("Cerrar") { dismiss() }
                 }
             }
-            // Alerta para mostrar errores
-            .alert("Error", isPresented: $showingErrorAlert) {
-                Button("OK") { }
-            } message: {
-                Text(alertMessage)
-            }
-            // --- NUEVO: Alerta para mostrar ÉXITO ---
-            .alert("Éxito", isPresented: $showingSuccessAlert) {
-                Button("OK") { } // Simplemente cierra la alerta
-            } message: {
-                Text(successMessage) // Muestra el mensaje de éxito
-            }
+            // ---- Alerta Personalizada para ERRORES ----
+            .customAlert(
+                isPresented: $showingErrorAlert,
+                title: "Error",
+                message: LocalizedStringKey(alertMessage)
+            )
+            // ---- Alerta Personalizada para ÉXITO ----
+            .customAlert(
+                isPresented: $showingSuccessAlert,
+                title: "Éxito",
+                message: LocalizedStringKey(successMessage)
+                
+            )
             
-        } // Fin NavigationStack
+        }
     }
     
-    // --- Funciones de Acción (Adaptadas con do-catch) ---
+    // --- Funciones de Acción Adaptadas (con Éxito y Error) ---
     
-    // Añade una persona existente seleccionada de la búsqueda
-    @MainActor // Marcar como MainActor porque llama a VM.addMember que lo es
+    @MainActor
     private func addExistingPerson(_ person: Person) {
         do {
             try viewModel.addMember(person, to: group, context: modelContext)
             print("Miembro existente '\(person.name)' añadido.")
             searchText = ""
-            successMessage = "\(person.name) se añadió al grupo con éxito."
-            showingSuccessAlert = true
+            // Prepara y muestra la alerta de ÉXITO
+            self.successMessage = "\(person.name) se añadió al grupo con éxito."
+            self.showingSuccessAlert = true
             
         } catch let error as LocalizedError {
-            // Error al añadir: Mostrar alerta
-            alertMessage = error.errorDescription ?? "No se pudo añadir a la persona."
-            showingErrorAlert = true
+            // Configura y muestra la alerta de ERROR
+            self.alertMessage = error.errorDescription ?? "No se pudo añadir a la persona."
+            self.showingErrorAlert = true
             print("Error al añadir miembro existente: \(error.localizedDescription)")
         } catch {
-            // Otro error inesperado
-            alertMessage = "Ocurrió un error inesperado al añadir a la persona."
-            showingErrorAlert = true
+            // Configura y muestra la alerta de ERROR genérico
+            self.alertMessage = "Ocurrió un error inesperado al añadir a la persona."
+            self.showingErrorAlert = true
             print("Error inesperado: \(error)")
         }
     }
     
-    // Crea una nueva persona y la añade al grupo
-    @MainActor // Marcar como MainActor porque llama a VM.addNewPersonAndAddToGroup que lo es
+    @MainActor
     private func addNewPerson() {
         let trimmedName = newPersonName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return } // Ya deshabilitado por botón, pero doble check
+        guard !trimmedName.isEmpty else { return }
         
         do {
             try viewModel.addNewPersonAndAddToGroup(name: trimmedName, to: group, context: modelContext)
             print("Nueva persona '\(trimmedName)' creada y añadida.")
-            newPersonName = ""
-            
-            successMessage = "\(trimmedName) se añadió al grupo con éxito."
-                        showingSuccessAlert = true
-                        newPersonName = ""
+            // Prepara y muestra la alerta de ÉXITO
+            self.successMessage = "\(trimmedName) se añadió al grupo con éxito."
+            self.showingSuccessAlert = true
+            newPersonName = "" // Limpia el campo después del éxito
             
         } catch let error as LocalizedError {
-            // Error al añadir: Mostrar alerta
-            alertMessage = error.errorDescription ?? "No se pudo añadir la nueva persona."
-            showingErrorAlert = true
+            // Configura y muestra la alerta de ERROR
+            self.alertMessage = error.errorDescription ?? "No se pudo añadir la nueva persona."
+            self.showingErrorAlert = true
             print("Error al añadir nueva persona: \(error.localizedDescription)")
         } catch {
-            // Otro error inesperado
-            alertMessage = "Ocurrió un error inesperado al añadir la nueva persona."
-            showingErrorAlert = true
+            // Configura y muestra la alerta de ERROR genérico
+            self.alertMessage = "Ocurrió un error inesperado al añadir la nueva persona."
+            self.showingErrorAlert = true
             print("Error inesperado: \(error)")
         }
     }
 }
 
-// --- Preview
+
+#Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Group.self, Person.self, Expense.self, configurations: config)
+    let p1 = Person(name: "Juan")
+    let group = Group(name: "Grupo Prueba")
+    group.members = [p1]
+    container.mainContext.insert(p1)
+    container.mainContext.insert(group)
+    let vm = GroupDetailViewModel()
+    MainActor.assumeIsolated { vm.setGroup(group) }
+    
+    return AddMemberView(group: group, viewModel: vm)
+        .modelContainer(container)
+}
 

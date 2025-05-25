@@ -7,104 +7,178 @@
 
 // Views/SettlementView.swift
 import SwiftUI
-import SwiftData // Necesario si pasas el Group, aunque aquí usamos el ViewModel
+import SwiftData
 
 struct SettlementView: View {
-    // Usamos el ViewModel que ya tiene la lógica y los datos necesarios.
-    // Asumimos que se pasa desde la vista padre (ej. GroupDetailView).
     @State var viewModel: GroupDetailViewModel
-
-    // Estado para almacenar las sugerencias calculadas
-    @State private var settlements: [String] = []
-
+    @State private var Fsettlements: [FormattedSettlement] = []
+    @State private var isLoading: Bool = true
+    
     var body: some View {
-        VStack {
-            if settlements.isEmpty {
-                 // Muestra un indicador mientras calcula o si hay error (aunque suggestSettlements devuelve array)
-                 ProgressView("Calculando liquidaciones...")
-                     .onAppear(perform: calculateSettlements) // Calcular al aparecer
-            } else if settlements.count == 1 && settlements.first == "¡Todas las cuentas están saldadas!" {
-                // Mensaje especial si todo está saldado
+        VStack(spacing: 0) {
+            if isLoading {
+                ProgressView("Calculando liquidaciones...")
+                    .frame(maxHeight: .infinity)
+            } else if Fsettlements.isEmpty {
                 ContentUnavailableView(
                     "Todo Saldado",
                     systemImage: "checkmark.circle.fill",
                     description: Text("¡Excelente! No hay deudas pendientes en este grupo.")
                 )
                 .foregroundStyle(.green)
+                .frame(maxHeight: .infinity)
             } else {
-                // Muestra la lista de sugerencias
-                List {
-                    Section("Pagos Sugeridos para Saldar Deudas") {
-                        ForEach(settlements, id: \.self) { suggestion in
-                            // Podrías parsear el string para un formato más rico si quisieras
-                            // Por ejemplo: extraer nombres y monto para usar iconos o formato distinto
-                            Text(suggestion)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Pagos Sugeridos")
+                            .font(.title2.bold())
+                            .padding(.bottom, 5)
+                            .padding(.horizontal)
+                        
+                        ForEach(Fsettlements) { settlement in
+                            SettlementCardView(settlement: settlement)
                         }
+                        .padding(.horizontal)
+                        
+                        Button {
+                            Task { await calculateSettlements() }
+                        } label: {
+                            Label("Refrescar Sugerencias", systemImage: "arrow.clockwise.circle.fill")
+                                .font(.headline)
+                                .padding(12)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.blue.opacity(0.15))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top)
+                        .padding(.bottom)
+                        
                     }
-                     Section { // Sección para el botón de refrescar
-                         Button {
-                              calculateSettlements() // Volver a calcular
-                         } label: {
-                              Label("Refrescar Sugerencias", systemImage: "arrow.clockwise")
-                         }
-                     }
+                    .padding(.vertical)
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Color("AppBackground"))
         .navigationTitle("Liquidar Cuentas")
-        //.navigationBarTitleDisplayMode(.inline) // Opcional
-        // Calcular la primera vez que aparece la vista
-        // .onAppear(perform: calculateSettlements) // Movido al ProgressView/List para mejor manejo
-         // Opcional: Recalcular si las dependencias cambian, aunque un botón de refrescar es más explícito
-         // .onChange(of: viewModel.memberBalances) { _, _ in calculateSettlements() }
-
+        .task {
+            await calculateSettlements()
+        }
+        .onChange(of: viewModel.memberBalances) {
+            Task { await calculateSettlements() }
+        }
     }
-
-    // Función para llamar al cálculo en el ViewModel
-    @MainActor private func calculateSettlements() {
-         // Llama a la función del ViewModel que ya tienes implementada
-         settlements = viewModel.suggestSettlements()
+    
+    @MainActor
+    private func calculateSettlements() async {
+        isLoading = true
+        self.Fsettlements = viewModel.suggestFormattedSettlements()
+        isLoading = false
     }
 }
 
-// --- Vista Previa (Preview) ---
-#Preview {
-    // 1. Configura el contenedor en memoria
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Group.self, Person.self, Expense.self, configurations: config)
-
-    // 2. Crea datos de ejemplo (más elaborados para generar deudas)
-    let p1 = Person(name: "Ana")
-    let p2 = Person(name: "Beto")
-    let p3 = Person(name: "Carlos")
-
-    let group = Group(name: "Grupo con Deudas")
-    group.members = [p1, p2, p3]
-
-    container.mainContext.insert(p1)
-    container.mainContext.insert(p2)
-    container.mainContext.insert(p3)
-    container.mainContext.insert(group)
-
-    // Gastos que generen deudas cruzadas
-    let ex1 = Expense(description: "Comida Ana", amount: 90.0, payer: p1, participants: [p1, p2, p3], group: group, splitType: .equally) // Ana paga 90, debe recibir 60. A:-30, B:-30, C:-30 -> A:+60, B:-30, C:-30
-    let ex2 = Expense(description: "Bebidas Beto", amount: 30.0, payer: p2, participants: [p1, p2, p3], group: group, splitType: .equally) // Beto paga 30, debe recibir 20. A:-10, B:-10, C:-10 -> A:+60-10=50, B:-30+20=-10, C:-30-10=-40
-    let ex3 = Expense(description: "Taxi Carlos", amount: 15.0, payer: p3, participants: [p1, p3], group: group, splitType: .equally) // Carlos paga 15 (participan A y C), debe recibir 7.5. A:-7.5, C:-7.5 -> A:50-7.5=42.5, B:-10, C:-40+7.5=-32.5
-
-    container.mainContext.insert(ex1)
-    container.mainContext.insert(ex2)
-    container.mainContext.insert(ex3)
-
-
-    // 3. Crea una instancia del ViewModel y configúrala
+#Preview("SettlementView Rediseñada") {
     let previewViewModel = GroupDetailViewModel()
-    MainActor.assumeIsolated {
-         previewViewModel.setGroup(group) // Esto calcula los balances iniciales
-    }
-
-    // 4. Retorna la vista dentro de una NavigationView
+    previewViewModel.memberBalances = [
+        MemberBalance(id: UUID(), name: "Luciano Nicolini", balance: -130.00),
+        MemberBalance(id: UUID(), name: "Gema Bot", balance: 150.00),
+        MemberBalance(id: UUID(), name: "Ana Pérez", balance: -75.50),
+        MemberBalance(id: UUID(), name: "Carlos Sol", balance: 75.50),
+        MemberBalance(id: UUID(), name: "Laura Mar", balance: -20.00)
+    ]
+    
     return NavigationView {
         SettlementView(viewModel: previewViewModel)
     }
-    .modelContainer(container)
+}
+
+#Preview("SettlementView Vacía") {
+    let previewViewModel = GroupDetailViewModel()
+    previewViewModel.memberBalances = [
+        MemberBalance(id: UUID(), name: "Persona A", balance: 0),
+        MemberBalance(id: UUID(), name: "Persona B", balance: 0)
+    ]
+    
+    return NavigationView {
+        SettlementView(viewModel: previewViewModel)
+    }
+}
+
+#Preview("SettlementCardView Individual") {
+    let settlementExample = FormattedSettlement(
+        payerName: "Juan Perez",
+        payeeName: "Maria Lopez",
+        amount: 123.45,
+        formattedAmount: "$123,45"
+    )
+    return SettlementCardView(settlement: settlementExample)
+        .padding()
+        .background(Color(.systemGray5))
+}
+
+
+// En SettlementView.swift (o SettlementCardView.swift)
+
+struct SettlementCardView: View {
+    let settlement: FormattedSettlement // Asume que FormattedSettlement tiene payerName, payeeName, formattedAmount
+    
+    private func initials(for name: String) -> String {
+        name.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .compactMap { $0.first }
+            .map { String($0).uppercased() }
+            .joined()
+    }
+    
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            // Sección Pagador
+            VStack(spacing: 4) {
+                Text(initials(for: settlement.payerName))
+                    .font(.callout)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.red.opacity(0.8))
+                    .clipShape(Circle())
+                Text(settlement.payerName.split(separator: " ").first ?? "")
+                    .font(.caption)
+                    .lineLimit(1)
+            }
+            .frame(width: 70)
+            
+            // Flecha y Monto
+            VStack(spacing: 2) {
+                Text(settlement.formattedAmount)
+                    .font(.system(.headline, design: .rounded).weight(.bold))
+                Image(systemName: "arrow.right.long")
+                    .font(.title3)
+                    .foregroundColor(.secondary)
+                Text("paga a") 
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            
+            // Sección Receptor
+            VStack(spacing: 4) {
+                Text(initials(for: settlement.payeeName))
+                    .font(.callout)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.green.opacity(0.8))
+                    .clipShape(Circle())
+                Text(settlement.payeeName.split(separator: " ").first ?? "")
+                    .font(.caption)
+                    .lineLimit(1)
+            }
+            .frame(width: 70)
+        }
+        .padding()
+        .background(Material.thin)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
 }
