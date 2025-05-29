@@ -63,7 +63,7 @@ struct AddExpenseView: View {
                             .padding(.vertical, 6)
                     }
                     .padding(.horizontal)
-                    .background(Color("SecondaryBackground").opacity(0.7), in: RoundedRectangle(cornerRadius: 10))
+                    //.background(Color("ColorButton").opacity(0.7), in: RoundedRectangle(cornerRadius: 10))
                     .padding(.horizontal)
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -73,11 +73,13 @@ struct AddExpenseView: View {
                             .padding(.horizontal)
                         Picker("Pagador", selection: $viewModel.selectedPayerId) {
                             Text("Nadie seleccionado").tag(nil as UUID?)
+                                .font(.body)
+                                .fontDesign(.rounded)
                             ForEach(viewModel.availableMembers()) { member in
                                 Text(member.name).tag(member.id as UUID?)
                             }
                         }
-                        .pickerStyle(.navigationLink)
+                        .pickerStyle(.menu)
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 10))
@@ -347,8 +349,7 @@ struct ParticipantAvatar: View {
     let accentColor: Color // El color de acento (probablemente group.displayColor)
 
     var body: some View {
-        VStack(spacing: 4) { // Espacio entre el círculo y el nombre
-            // Círculo con la inicial
+        VStack(spacing: 4) {
             Text(member.name.prefix(1)) // Muestra la primera letra del nombre
                 .font(isSelected ? .title2 : .title3) // Fuente un poco más grande si está seleccionado
                 .fontWeight(.medium)
@@ -357,12 +358,13 @@ struct ParticipantAvatar: View {
                 // Fondo: usa el color de acento con opacidad si está seleccionado, o un gris si no
                 .background(isSelected ? accentColor.opacity(0.3) : Color(.systemGray5))
                 // Color de la letra: usa el color de acento si está seleccionado, o el primario si no
-                .foregroundStyle(isSelected ? accentColor : Color(.white)) // <- Usa tu color adaptativo
+                .foregroundStyle(isSelected ? accentColor : Color(.primaryText)) // <- Usa tu color adaptativo
                 .clipShape(Circle()) // Forma circular
                 // Añade un borde de color de acento si está seleccionado
                 .overlay(
                     Circle()
-                        .stroke(isSelected ? accentColor : Color.clear, lineWidth: 2.5) // Borde visible solo si isSelected es true
+                        .stroke(isSelected ? accentColor : Color.gray, lineWidth: 2.5)
+                    
                 )
 
             // Nombre debajo del círculo
@@ -370,10 +372,10 @@ struct ParticipantAvatar: View {
                 .font(.caption) // Fuente pequeña para el nombre
                 .lineLimit(1) // Evita que el nombre ocupe múltiples líneas
                  
-                .foregroundStyle(isSelected ? accentColor : Color(.white)) // <- Usa tu color adaptativo
+                .foregroundStyle(isSelected ? accentColor : Color(.primaryText)) // <- Usa tu color adaptativo
         }
-        .opacity(isSelected ? 1.0 : 0.75) // Hace que los no seleccionados se vean ligeramente más tenues
-        // Puedes añadir una animación si cambias la opacidad o el tamaño con .animation() aquí
-        // .animation(.spring(), value: isSelected)
+        .opacity(isSelected ? 1.0 : 0.75)
+        
+        .animation(.spring(), value: isSelected)
     }
 }

@@ -36,6 +36,8 @@
 		19756C2F2DDB7E7C00E85453 /* CustomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19756C2E2DDB7E7B00E85453 /* CustomButton.swift */; };
 		1995A0FD2DDC5360007B3A93 /* BalanceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1995A0FC2DDC5360007B3A93 /* BalanceCardView.swift */; };
 		19C436942DC260FD00E1D8C7 /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C436932DC260FD00E1D8C7 /* CustomAlertView.swift */; };
+		19D3F5002DE7D06D0091F5EE /* SettlementCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D3F4FF2DE7D06D0091F5EE /* SettlementCardView.swift */; };
+		19D3F5022DE8BE830091F5EE /* AllSettledView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D3F5012DE8BE830091F5EE /* AllSettledView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +90,8 @@
 		19756C2E2DDB7E7B00E85453 /* CustomButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomButton.swift; sourceTree = "<group>"; };
 		1995A0FC2DDC5360007B3A93 /* BalanceCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceCardView.swift; sourceTree = "<group>"; };
 		19C436932DC260FD00E1D8C7 /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
+		19D3F4FF2DE7D06D0091F5EE /* SettlementCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementCardView.swift; sourceTree = "<group>"; };
+		19D3F5012DE8BE830091F5EE /* AllSettledView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllSettledView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -236,6 +240,8 @@
 				193D46312DB8332D004B9CB8 /* EditMemberView.swift */,
 				193D46332DB8349C004B9CB8 /* BalanceView.swift */,
 				193D46352DB837D0004B9CB8 /* SettlementView.swift */,
+				19D3F4FF2DE7D06D0091F5EE /* SettlementCardView.swift */,
+				19D3F5012DE8BE830091F5EE /* AllSettledView.swift */,
 			);
 			path = MemberViews;
 			sourceTree = "<group>";
@@ -389,6 +395,7 @@
 			files = (
 				193D46152DB81F08004B9CB8 /* Expense.swift in Sources */,
 				1955BF6E2DDD510800078F33 /* ExpenseRowView.swift in Sources */,
+				19D3F5022DE8BE830091F5EE /* AllSettledView.swift in Sources */,
 				193D46172DB81F98004B9CB8 /* Color+Hex.swift in Sources */,
 				193D46292DB828D7004B9CB8 /* GroupDetailView.swift in Sources */,
 				193D461E2DB81FE3004B9CB8 /* GroupListViewModel.swift in Sources */,
@@ -403,6 +410,7 @@
 				1995A0FD2DDC5360007B3A93 /* BalanceCardView.swift in Sources */,
 				19756C2F2DDB7E7C00E85453 /* CustomButton.swift in Sources */,
 				193D46322DB8332D004B9CB8 /* EditMemberView.swift in Sources */,
+				19D3F5002DE7D06D0091F5EE /* SettlementCardView.swift in Sources */,
 				193D45E22DB81D74004B9CB8 /* ContentView.swift in Sources */,
 				193D46252DB8220F004B9CB8 /* AddMemberView.swift in Sources */,
 				193D46102DB81E86004B9CB8 /* ExpenseError.swift in Sources */,
