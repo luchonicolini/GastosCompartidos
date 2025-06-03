@@ -30,17 +30,18 @@ struct ExpenseRowView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             // Opcional: Icono principal para el gasto
-            // Image(systemName: "cart.fill") // Ejemplo
-            //     .font(.title2)
-            //     .foregroundColor(Color.accentColor) // O el color del grupo: expense.group?.displayColor
-            //     .frame(width: 35, height: 35)
-            //     .background( (expense.group?.displayColor ?? Color.gray).opacity(0.1) )
-            //     .clipShape(Circle())
+//             Image(systemName: "cart.fill") 
+//                 .font(.title2)
+//                 .foregroundColor(Color.accentColor) // O el color del grupo: expense.group?.displayColor
+//                 .frame(width: 35, height: 35)
+//                 .background( (expense.group?.displayColor ?? Color.gray).opacity(0.1) )
+//                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(expense.expenseDescription)
                     .font(.headline)
-                    .lineLimit(2) // Permitir hasta 2 líneas para la descripción
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
 
                 HStack(spacing: 4) {
                     Image(systemName: "person.fill")
@@ -50,20 +51,22 @@ struct ExpenseRowView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
                 
-                // Opcional: Mostrar la fecha del gasto
-                // Text(Self.dateFormatter.string(from: expense.date))
-                //     .font(.caption2)
-                //     .foregroundColor(.gray)
+//                 Text(Self.dateFormatter.string(from: expense.date))
+//                     .font(.caption2)
+//                     .foregroundColor(.gray)
             }
 
-            Spacer() // Empuja el monto a la derecha
+            Spacer(minLength: 4)
 
             Text(currencyFormatter.string(from: NSNumber(value: expense.amount)) ?? "")
-                .font(.title3.weight(.semibold).monospacedDigit()) // Fuente monoespaciada para números
-                .foregroundColor(.primary) // Color principal para el monto
+                .font(.title3.weight(.semibold).monospacedDigit())
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .foregroundColor(.primary)
         }
-        .padding(.vertical, 10) // Padding vertical para dar más aire a cada fila
+        .padding(.vertical, 10) 
     }
 }

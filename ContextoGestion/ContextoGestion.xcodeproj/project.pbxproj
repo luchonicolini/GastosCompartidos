@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		192007432DEE506200432DF5 /* SettlementPayment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 192007422DEE506200432DF5 /* SettlementPayment.swift */; };
 		193D45E02DB81D74004B9CB8 /* ContextoGestionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193D45DF2DB81D74004B9CB8 /* ContextoGestionApp.swift */; };
 		193D45E22DB81D74004B9CB8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193D45E12DB81D74004B9CB8 /* ContentView.swift */; };
 		193D45E42DB81D7A004B9CB8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 193D45E32DB81D7A004B9CB8 /* Assets.xcassets */; };
@@ -35,7 +36,14 @@
 		1955BF702DDD52D300078F33 /* MemberRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1955BF6F2DDD52D300078F33 /* MemberRowView.swift */; };
 		19756C2F2DDB7E7C00E85453 /* CustomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19756C2E2DDB7E7B00E85453 /* CustomButton.swift */; };
 		1995A0FD2DDC5360007B3A93 /* BalanceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1995A0FC2DDC5360007B3A93 /* BalanceCardView.swift */; };
+		19A396822DEA265400105A21 /* ExpenseComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A396812DEA265400105A21 /* ExpenseComponents.swift */; };
+		19A396842DEA26A900105A21 /* AddExpenseView .swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A396832DEA26A900105A21 /* AddExpenseView .swift */; };
+		19A396862DEA7F2E00105A21 /* hideKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A396852DEA7F2E00105A21 /* hideKeyboard.swift */; };
+		19A396882DEA81AA00105A21 /* ReviewHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A396872DEA81AA00105A21 /* ReviewHandler.swift */; };
+		19BDB5FF2DED15CF001EE6CF /* EditGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BDB5FE2DED15CF001EE6CF /* EditGroupView.swift */; };
 		19C436942DC260FD00E1D8C7 /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C436932DC260FD00E1D8C7 /* CustomAlertView.swift */; };
+		19D3F5002DE7D06D0091F5EE /* SettlementCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D3F4FF2DE7D06D0091F5EE /* SettlementCardView.swift */; };
+		19D3F5022DE8BE830091F5EE /* AllSettledView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D3F5012DE8BE830091F5EE /* AllSettledView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +64,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		192007422DEE506200432DF5 /* SettlementPayment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementPayment.swift; sourceTree = "<group>"; };
 		193D45DC2DB81D74004B9CB8 /* ContextoGestion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ContextoGestion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		193D45DF2DB81D74004B9CB8 /* ContextoGestionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextoGestionApp.swift; sourceTree = "<group>"; };
 		193D45E12DB81D74004B9CB8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -87,7 +96,14 @@
 		1955BF6F2DDD52D300078F33 /* MemberRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberRowView.swift; sourceTree = "<group>"; };
 		19756C2E2DDB7E7B00E85453 /* CustomButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomButton.swift; sourceTree = "<group>"; };
 		1995A0FC2DDC5360007B3A93 /* BalanceCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceCardView.swift; sourceTree = "<group>"; };
+		19A396812DEA265400105A21 /* ExpenseComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseComponents.swift; sourceTree = "<group>"; };
+		19A396832DEA26A900105A21 /* AddExpenseView .swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AddExpenseView .swift"; sourceTree = "<group>"; };
+		19A396852DEA7F2E00105A21 /* hideKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = hideKeyboard.swift; sourceTree = "<group>"; };
+		19A396872DEA81AA00105A21 /* ReviewHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewHandler.swift; sourceTree = "<group>"; };
+		19BDB5FE2DED15CF001EE6CF /* EditGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditGroupView.swift; sourceTree = "<group>"; };
 		19C436932DC260FD00E1D8C7 /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
+		19D3F4FF2DE7D06D0091F5EE /* SettlementCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementCardView.swift; sourceTree = "<group>"; };
+		19D3F5012DE8BE830091F5EE /* AllSettledView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllSettledView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -183,6 +199,7 @@
 				193D460D2DB81E6E004B9CB8 /* Person.swift */,
 				193D460B2DB81E58004B9CB8 /* Group.swift */,
 				193D46142DB81F08004B9CB8 /* Expense.swift */,
+				192007422DEE506200432DF5 /* SettlementPayment.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -202,6 +219,7 @@
 				193D46092DB81E3F004B9CB8 /* HomeView.swift */,
 				193D461F2DB82065004B9CB8 /* GroupRowView.swift */,
 				193D46212DB820CD004B9CB8 /* AddGroupView.swift */,
+				19BDB5FE2DED15CF001EE6CF /* EditGroupView.swift */,
 			);
 			path = Main;
 			sourceTree = "<group>";
@@ -236,6 +254,8 @@
 				193D46312DB8332D004B9CB8 /* EditMemberView.swift */,
 				193D46332DB8349C004B9CB8 /* BalanceView.swift */,
 				193D46352DB837D0004B9CB8 /* SettlementView.swift */,
+				19D3F4FF2DE7D06D0091F5EE /* SettlementCardView.swift */,
+				19D3F5012DE8BE830091F5EE /* AllSettledView.swift */,
 			);
 			path = MemberViews;
 			sourceTree = "<group>";
@@ -244,6 +264,8 @@
 			isa = PBXGroup;
 			children = (
 				193D46382DB838E0004B9CB8 /* AddExpenseView.swift */,
+				19A396812DEA265400105A21 /* ExpenseComponents.swift */,
+				19A396832DEA26A900105A21 /* AddExpenseView .swift */,
 			);
 			path = AddExpense;
 			sourceTree = "<group>";
@@ -253,6 +275,8 @@
 			children = (
 				19C436932DC260FD00E1D8C7 /* CustomAlertView.swift */,
 				19756C2E2DDB7E7B00E85453 /* CustomButton.swift */,
+				19A396852DEA7F2E00105A21 /* hideKeyboard.swift */,
+				19A396872DEA81AA00105A21 /* ReviewHandler.swift */,
 			);
 			path = Introducion;
 			sourceTree = "<group>";
@@ -389,10 +413,13 @@
 			files = (
 				193D46152DB81F08004B9CB8 /* Expense.swift in Sources */,
 				1955BF6E2DDD510800078F33 /* ExpenseRowView.swift in Sources */,
+				19D3F5022DE8BE830091F5EE /* AllSettledView.swift in Sources */,
 				193D46172DB81F98004B9CB8 /* Color+Hex.swift in Sources */,
 				193D46292DB828D7004B9CB8 /* GroupDetailView.swift in Sources */,
+				19A396822DEA265400105A21 /* ExpenseComponents.swift in Sources */,
 				193D461E2DB81FE3004B9CB8 /* GroupListViewModel.swift in Sources */,
 				193D461C2DB81FE3004B9CB8 /* AddExpenseViewModel.swift in Sources */,
+				19A396882DEA81AA00105A21 /* ReviewHandler.swift in Sources */,
 				193D460E2DB81E6E004B9CB8 /* Person.swift in Sources */,
 				193D46202DB82065004B9CB8 /* GroupRowView.swift in Sources */,
 				193D46342DB8349C004B9CB8 /* BalanceView.swift in Sources */,
@@ -401,8 +428,12 @@
 				193D46362DB837D0004B9CB8 /* SettlementView.swift in Sources */,
 				19C436942DC260FD00E1D8C7 /* CustomAlertView.swift in Sources */,
 				1995A0FD2DDC5360007B3A93 /* BalanceCardView.swift in Sources */,
+				19A396842DEA26A900105A21 /* AddExpenseView .swift in Sources */,
 				19756C2F2DDB7E7C00E85453 /* CustomButton.swift in Sources */,
 				193D46322DB8332D004B9CB8 /* EditMemberView.swift in Sources */,
+				19D3F5002DE7D06D0091F5EE /* SettlementCardView.swift in Sources */,
+				192007432DEE506200432DF5 /* SettlementPayment.swift in Sources */,
+				19A396862DEA7F2E00105A21 /* hideKeyboard.swift in Sources */,
 				193D45E22DB81D74004B9CB8 /* ContentView.swift in Sources */,
 				193D46252DB8220F004B9CB8 /* AddMemberView.swift in Sources */,
 				193D46102DB81E86004B9CB8 /* ExpenseError.swift in Sources */,
@@ -411,6 +442,7 @@
 				193D460C2DB81E58004B9CB8 /* Group.swift in Sources */,
 				193D46392DB838E0004B9CB8 /* AddExpenseView.swift in Sources */,
 				193D461D2DB81FE3004B9CB8 /* GroupDetailViewModel.swift in Sources */,
+				19BDB5FF2DED15CF001EE6CF /* EditGroupView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

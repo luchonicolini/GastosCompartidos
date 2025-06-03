@@ -8,7 +8,6 @@
 import SwiftData
 import SwiftUI
 
-// Asegúrate que NO diga 'private final class Group'
 @Model
 final class Group {
     @Attribute(.unique) var id: UUID
@@ -20,6 +19,10 @@ final class Group {
     var members: [Person]? = []
     @Relationship(deleteRule: .cascade, inverse: \Expense.group)
     var expenses: [Expense]? = []
+    
+    // NUEVA RELACIÓN: Relación con SettlementPayment (uno a muchos)
+    @Relationship(deleteRule: .cascade, inverse: \SettlementPayment.group)
+    var settlementPayments: [SettlementPayment]? = []
 
     var displayIcon: Image {
         Image(systemName: iconName ?? "person.3.sequence.fill")
@@ -32,7 +35,6 @@ final class Group {
         return .blue
     }
 
-    // Asegúrate que este init NO sea 'private init'
     init(id: UUID = UUID(),
          name: String = "",
          creationDate: Date = Date(),
@@ -44,5 +46,6 @@ final class Group {
         self.creationDate = creationDate
         self.iconName = iconName
         self.colorHex = colorHex
+        self.settlementPayments = [] // Inicializar la nueva propiedad
     }
 }

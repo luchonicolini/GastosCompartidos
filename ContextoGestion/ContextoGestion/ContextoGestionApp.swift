@@ -10,6 +10,10 @@ import SwiftData
 
 @main
 struct ContextoGestionApp: App {
+    init() {
+           ReviewHandler.shared.incrementAppLaunchCount()
+           print("App Launch Count: \(UserDefaults.standard.integer(forKey: "appLaunchCount_ContextoGestion"))")
+       }
     let container: ModelContainer = {
         let schema = Schema([
             Group.self,

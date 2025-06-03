@@ -13,7 +13,7 @@ struct BalanceCardView: View {
     let currencyFormatter: NumberFormatter
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .center, spacing: 10) {
             // Icono indicativo (opcional, pero puede añadir claridad)
             Image(systemName: balanceIconName)
                 .font(.title2)
@@ -23,26 +23,33 @@ struct BalanceCardView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(balanceInfo.name)
-                    .font(.system(.headline, design: .rounded)) // Un poco más de estilo en la fuente
+                    .font(.system(.headline, design: .rounded))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
                     .fontWeight(.medium)
                     .foregroundColor(.primary) // Color primario para el nombre
 
                 Text(balanceStatusText)
                     .font(.caption)
-                    .foregroundColor(.secondary) // Color secundario para el estado
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .foregroundColor(balanceColor) // Color secundario para el estado
             }
 
-            Spacer() // Empuja el monto hacia la derecha
+            Spacer(minLength: 4)// Empuja el monto hacia la derecha
 
             Text(currencyFormatter.string(from: NSNumber(value: balanceInfo.balance)) ?? "\(String(format: "%.2f", balanceInfo.balance))")
-                .font(.system(.title3, design: .rounded).weight(.semibold)) // Monto más prominente
+                .font(.system(.title3, design: .rounded).weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .multilineTextAlignment(.trailing)
                 .foregroundColor(balanceColor) // Color según el saldo
         }
         .padding() // Padding interno de la tarjeta
         .background(Material.thin) // Efecto translúcido moderno (como las notificaciones de iOS)
                                     // Alternativa: Color(.systemGray6) para un fondo sólido claro
         .clipShape(RoundedRectangle(cornerRadius: 12)) // Esquinas redondeadas
-        // .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2) // Sombra sutil opcional
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2) // Sombra sutil opcional
     }
 
     // Lógica para determinar el color y el icono basado en el saldo

@@ -6,6 +6,13 @@
 //
 
 
+//
+//  GroupDetailViewModel.swift
+//  GastosPrueba
+//
+//  Created by Luciano Nicolini on 16/04/2025.
+//
+
 import SwiftData
 import Observation
 import Foundation
@@ -17,6 +24,8 @@ struct FormattedSettlement: Identifiable, Hashable {
     let payeeName: String
     let amount: Double
     let formattedAmount: String
+    let payerId: UUID
+    let payeeId: UUID
 }
 
 @Observable
@@ -25,6 +34,8 @@ class GroupDetailViewModel {
     var memberBalances: [MemberBalance] = []
     private var currentGroup: Group?
 
+    // MARK: - Group Management
+    
     @MainActor
     func setGroup(_ group: Group) {
         self.currentGroup = group
@@ -42,14 +53,90 @@ class GroupDetailViewModel {
         let currentMemberIDs = Set(members.map { $0.id })
         var balances: [UUID: Double] = Dictionary(uniqueKeysWithValues: members.map { ($0.id, 0.0) })
         
-        guard let expenses = group.expenses, !expenses.isEmpty else {
-            updateMemberBalancesArray(from: balances, members: members)
-            return
+        // Procesar gastos normales
+        if let expenses = group.expenses, !expenses.isEmpty {
+            processExpensesForBalances(expenses: expenses, currentMemberIDs: currentMemberIDs, balances: &balances)
         }
         
-        processExpensesForBalances(expenses: expenses, currentMemberIDs: currentMemberIDs, balances: &balances)
+        // Procesar pagos de liquidación
+        if let settlementPayments = group.settlementPayments, !settlementPayments.isEmpty {
+            processSettlementPaymentsForBalances(payments: settlementPayments, currentMemberIDs: currentMemberIDs, balances: &balances)
+        }
+        
         updateMemberBalancesArray(from: balances, members: members)
     }
+    
+    // MARK: - Settlement Payment Management
+    
+    @MainActor
+    func confirmSettlementPayment(_ settlement: FormattedSettlement, context: ModelContext) throws {
+        guard let group = currentGroup else {
+            throw SettlementError.noGroupSelected
+        }
+        
+        // Validar que el monto sea positivo
+        guard settlement.amount > 0 else {
+            throw SettlementError.invalidAmount
+        }
+        
+        // Crear el pago de liquidación
+        let settlementPayment = SettlementPayment(
+            payerId: settlement.payerId,
+            payeeId: settlement.payeeId,
+            amount: settlement.amount,
+            group: group,
+            payerName: settlement.payerName,
+            payeeName: settlement.payeeName
+        )
+        
+        // Insertar en el contexto
+        context.insert(settlementPayment)
+        
+        // Agregar a la relación del grupo
+        if group.settlementPayments == nil {
+            group.settlementPayments = []
+        }
+        group.settlementPayments?.append(settlementPayment)
+        
+        // Guardar cambios
+        do {
+            try context.save()
+        } catch {
+            // Si falla el guardado, eliminar el objeto insertado
+            context.delete(settlementPayment)
+            throw SettlementError.databaseSaveError(error)
+        }
+        
+        // Recalcular balances automáticamente
+        calculateBalances(for: group)
+    }
+    
+    @MainActor
+    func deleteSettlementPayment(_ payment: SettlementPayment, context: ModelContext) throws {
+        guard let group = currentGroup else {
+            throw SettlementError.noGroupSelected
+        }
+        
+        // Eliminar de la base de datos
+        context.delete(payment)
+        
+        // Guardar cambios
+        do {
+            try context.save()
+        } catch {
+            throw SettlementError.databaseSaveError(error)
+        }
+        
+        // Recalcular balances
+        calculateBalances(for: group)
+    }
+    
+    @MainActor
+    func getAllSettlementPayments() -> [SettlementPayment] {
+        return currentGroup?.settlementPayments ?? []
+    }
+    
+    // MARK: - Member Management
     
     @MainActor
     func addMember(_ person: Person, to group: Group, context: ModelContext) throws {
@@ -110,12 +197,16 @@ class GroupDetailViewModel {
         }
     }
     
+    // MARK: - Expense Management
+    
     @MainActor
     func deleteExpense(_ expense: Expense, context: ModelContext) {
         guard let group = expense.group, group == self.currentGroup else { return }
         context.delete(expense)
         calculateBalances(for: group)
     }
+    
+    // MARK: - Settlement Suggestions
     
     @MainActor
     func suggestSettlements() -> [String] {
@@ -182,7 +273,9 @@ class GroupDetailViewModel {
                 payerName: currentDebtor.name,
                 payeeName: currentCreditor.name,
                 amount: amountToTransfer,
-                formattedAmount: formattedAmountStr
+                formattedAmount: formattedAmountStr,
+                payerId: currentDebtor.id,
+                payeeId: currentCreditor.id
             ))
 
             currentDebtor.balance = (currentDebtor.balance + amountToTransfer).rounded(toPlaces: 2)
@@ -196,6 +289,21 @@ class GroupDetailViewModel {
             }
         }
         return Fsettlements
+    }
+    
+    // MARK: - Private Helper Functions
+    
+    private func processSettlementPaymentsForBalances(payments: [SettlementPayment], currentMemberIDs: Set<UUID>, balances: inout [UUID: Double]) {
+        for payment in payments {
+            // El pagador reduce su deuda (suma positiva al balance)
+            if currentMemberIDs.contains(payment.payerId) {
+                balances[payment.payerId, default: 0.0] += payment.amount
+            }
+            // El receptor reduce su crédito (resta del balance)
+            if currentMemberIDs.contains(payment.payeeId) {
+                balances[payment.payeeId, default: 0.0] -= payment.amount
+            }
+        }
     }
     
     private func createCurrencyFormatter() -> NumberFormatter {
@@ -267,8 +375,6 @@ class GroupDetailViewModel {
     }
     
     private func calculateShares(expense: Expense, participants: [Person]) -> [UUID: Double] {
-        _ = expense.amount.rounded(toPlaces: 2)
-        
         switch expense.splitType {
         case .equally:
             return calculateEqualShares(expense: expense, participants: participants)
@@ -317,6 +423,8 @@ class GroupDetailViewModel {
             }
             
             if abs(calculatedSum - expenseAmountRounded) > 0.01 {
+                // Log inconsistency but continue
+                print("Warning: Split details sum (\(calculatedSum)) doesn't match expense amount (\(expenseAmountRounded))")
             }
         } else {
             return calculateEqualShares(expense: expense, participants: participants)
@@ -382,3 +490,26 @@ class GroupDetailViewModel {
         return sharesToDebit
     }
 }
+
+// MARK: - Error Handling
+
+enum SettlementError: LocalizedError {
+    case noGroupSelected
+    case invalidAmount
+    case databaseSaveError(Error)
+    case paymentNotFound
+    
+    var errorDescription: String? {
+        switch self {
+        case .noGroupSelected:
+            return "No hay grupo seleccionado"
+        case .invalidAmount:
+            return "El monto del pago debe ser mayor a cero"
+        case .databaseSaveError(let error):
+            return "Error al guardar en la base de datos: \(error.localizedDescription)"
+        case .paymentNotFound:
+            return "Pago de liquidación no encontrado"
+        }
+    }
+}
+
